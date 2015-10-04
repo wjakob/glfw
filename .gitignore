@@ -83,3 +83,7 @@ tests/title
 tests/vulkan
 tests/windows
 
+# Ninja build system
+.ninja_deps
+.ninja_log
+*.ninja
