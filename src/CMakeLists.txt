@@ -57,7 +57,9 @@ if (APPLE)
     set_source_files_properties(${glfw_SOURCES} PROPERTIES LANGUAGE C)
 endif()
 
-add_library(glfw ${glfw_SOURCES} ${glfw_HEADERS})
+add_library(glfw_objects OBJECT ${glfw_SOURCES} ${glfw_HEADERS})
+
+add_library(glfw $<TARGET_OBJECTS:glfw_objects>)
 set_target_properties(glfw PROPERTIES
                       OUTPUT_NAME "${GLFW_LIB_NAME}"
                       VERSION ${GLFW_VERSION}
