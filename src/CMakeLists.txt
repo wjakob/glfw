@@ -67,11 +67,11 @@ set_target_properties(glfw PROPERTIES
                       POSITION_INDEPENDENT_CODE ON
                       FOLDER "GLFW3")
 
-target_compile_definitions(glfw PRIVATE -D_GLFW_USE_CONFIG_H)
-target_include_directories(glfw PUBLIC
+target_compile_definitions(glfw_objects PRIVATE -D_GLFW_USE_CONFIG_H)
+target_include_directories(glfw_objects PUBLIC
                            $<BUILD_INTERFACE:${GLFW_SOURCE_DIR}/include>
                            $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>)
-target_include_directories(glfw PRIVATE
+target_include_directories(glfw_objects PRIVATE
                            "${GLFW_SOURCE_DIR}/src"
                            "${GLFW_BINARY_DIR}/src"
                            ${glfw_INCLUDE_DIRS})
@@ -80,12 +80,13 @@ target_include_directories(glfw PRIVATE
 # the inclusion of stddef.h (by glfw3.h), which is itself included before
 # win32_platform.h.  We define them here until a saner solution can be found
 # NOTE: MinGW-w64 and Visual C++ do /not/ need this hack.
-target_compile_definitions(glfw PRIVATE
+target_compile_definitions(glfw_objects PRIVATE
                            "$<$<BOOL:${MINGW}>:UNICODE;WINVER=0x0501>")
 
 # Enable a reasonable set of warnings (no, -Wextra is not reasonable)
-target_compile_options(glfw PRIVATE
+target_compile_options(glfw_objects PRIVATE
                        "$<$<C_COMPILER_ID:Clang>:-Wall>"
+                       "$<$<C_COMPILER_ID:Clang>:-Wno-deprecated-declarations>"
                        "$<$<C_COMPILER_ID:GNU>:-Wall>")
 
 if (BUILD_SHARED_LIBS)
@@ -102,7 +103,7 @@ if (BUILD_SHARED_LIBS)
         endif()
     elseif (APPLE)
         # Add -fno-common to work around a bug in Apple's GCC
-        target_compile_options(glfw PRIVATE "-fno-common")
+        target_compile_options(glfw_objects PRIVATE "-fno-common")
 
         set_target_properties(glfw PROPERTIES
                               INSTALL_NAME_DIR "lib${LIB_SUFFIX}")

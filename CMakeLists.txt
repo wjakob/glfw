@@ -10,6 +10,10 @@ if (NOT CMAKE_VERSION VERSION_LESS "3.0")
     cmake_policy(SET CMP0042 OLD)
 endif()
 
+if(POLICY CMP0022)
+  cmake_policy(SET CMP0022 NEW)
+endif()
+
 set(GLFW_VERSION_MAJOR "3")
 set(GLFW_VERSION_MINOR "2")
 set(GLFW_VERSION_PATCH "0")
@@ -60,7 +64,7 @@ endif()
 set(CMAKE_MODULE_PATH "${GLFW_SOURCE_DIR}/CMake/modules")
 
 find_package(Threads REQUIRED)
-find_package(Vulkan)
+find_package(Vulkan QUIET)
 
 if (GLFW_BUILD_DOCS)
     set(DOXYGEN_SKIP_DOT TRUE)
