@@ -1,8 +1,8 @@
 //========================================================================
-// GLFW 3.2 Win32 - www.glfw.org
+// GLFW 3.3 Win32 - www.glfw.org
 //------------------------------------------------------------------------
 // Copyright (c) 2002-2006 Marcus Geelnard
-// Copyright (c) 2006-2016 Camilla Berglund <elmindreda@glfw.org>
+// Copyright (c) 2006-2016 Camilla Löwy <elmindreda@glfw.org>
 //
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -46,9 +46,11 @@ static DWORD getWindowStyle(const _GLFWwindow* window)
         style |= WS_POPUP;
     else
     {
+        style |= WS_SYSMENU | WS_MINIMIZEBOX;
+
         if (window->decorated)
         {
-            style |= WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+            style |= WS_CAPTION;
 
             if (window->resizable)
                 style |= WS_MAXIMIZEBOX | WS_THICKFRAME;
@@ -131,16 +133,16 @@ static HICON createIcon(const GLFWimage* image,
 
     if (!color)
     {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to create RGBA bitmap");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to create RGBA bitmap");
         return NULL;
     }
 
     mask = CreateBitmap(image->width, image->height, 1, 1, NULL);
     if (!mask)
     {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to create mask bitmap");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to create mask bitmap");
         DeleteObject(color);
         return NULL;
     }
@@ -170,9 +172,15 @@ static HICON createIcon(const GLFWimage* image,
     if (!handle)
     {
         if (icon)
-            _glfwInputError(GLFW_PLATFORM_ERROR, "Win32: Failed to create icon");
+        {
+            _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                                 "Win32: Failed to create icon");
+        }
         else
-            _glfwInputError(GLFW_PLATFORM_ERROR, "Win32: Failed to create cursor");
+        {
+            _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                                 "Win32: Failed to create cursor");
+        }
     }
 
     return handle;
@@ -278,6 +286,26 @@ static void updateClipRect(_GLFWwindow* window)
         ClipCursor(NULL);
 }
 
+// Update native window styles to match attributes
+//
+static void updateWindowStyles(const _GLFWwindow* window)
+{
+    RECT rect;
+    DWORD style = GetWindowLongW(window->win32.handle, GWL_STYLE);
+    style &= ~(WS_OVERLAPPEDWINDOW | WS_POPUP);
+    style |= getWindowStyle(window);
+
+    GetClientRect(window->win32.handle, &rect);
+    AdjustWindowRectEx(&rect, style, FALSE, getWindowExStyle(window));
+    ClientToScreen(window->win32.handle, (POINT*) &rect.left);
+    ClientToScreen(window->win32.handle, (POINT*) &rect.right);
+    SetWindowLongW(window->win32.handle, GWL_STYLE, style);
+    SetWindowPos(window->win32.handle, HWND_TOP,
+                 rect.left, rect.top,
+                 rect.right - rect.left, rect.bottom - rect.top,
+                 SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOZORDER);
+}
+
 // Translates a GLFW standard cursor to a resource ID
 //
 static LPWSTR translateCursorShape(int shape)
@@ -341,20 +369,19 @@ static int getAsyncKeyMods(void)
 //
 static int translateKey(WPARAM wParam, LPARAM lParam)
 {
+    // The Ctrl keys require special handling
     if (wParam == VK_CONTROL)
     {
-        // The CTRL keys require special handling
-
         MSG next;
         DWORD time;
 
-        // Is this an extended key (i.e. right key)?
+        // Right side keys have the extended key bit set
         if (lParam & 0x01000000)
             return GLFW_KEY_RIGHT_CONTROL;
 
-        // Here is a trick: "Alt Gr" sends LCTRL, then RALT. We only
-        // want the RALT message, so we try to see if the next message
-        // is a RALT message. In that case, this is a false LCTRL!
+        // HACK: Alt Gr sends Left Ctrl and then Right Alt in close sequence
+        //       We only want the Right Alt message, so if the next message is
+        //       Right Alt we ignore this (synthetic) Left Ctrl message
         time = GetMessageTime();
 
         if (PeekMessageW(&next, NULL, 0, 0, PM_NOREMOVE))
@@ -368,8 +395,7 @@ static int translateKey(WPARAM wParam, LPARAM lParam)
                     (next.lParam & 0x01000000) &&
                     next.time == time)
                 {
-                    // Next message is a RALT down message, which
-                    // means that this is not a proper LCTRL message
+                    // Next message is Right Alt down so discard this
                     return _GLFW_KEY_INVALID;
                 }
             }
@@ -385,7 +411,7 @@ static int translateKey(WPARAM wParam, LPARAM lParam)
         return _GLFW_KEY_INVALID;
     }
 
-    return _glfw.win32.publicKeys[HIWORD(lParam) & 0x1FF];
+    return _glfw.win32.keycodes[HIWORD(lParam) & 0x1FF];
 }
 
 // Make the specified window and its video mode active on its monitor
@@ -396,6 +422,11 @@ static GLFWbool acquireMonitor(_GLFWwindow* window)
     GLFWbool status;
     int xpos, ypos;
 
+    if (!_glfw.win32.acquiredMonitorCount)
+        SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
+    if (!window->monitor->window)
+        _glfw.win32.acquiredMonitorCount++;
+
     status = _glfwSetVideoModeWin32(window->monitor, &window->videoMode);
 
     _glfwPlatformGetVideoMode(window->monitor, &mode);
@@ -405,7 +436,7 @@ static GLFWbool acquireMonitor(_GLFWwindow* window)
                  xpos, ypos, mode.width, mode.height,
                  SWP_NOACTIVATE | SWP_NOCOPYBITS);
 
-    _glfwInputMonitorWindowChange(window->monitor, window);
+    _glfwInputMonitorWindow(window->monitor, window);
     return status;
 }
 
@@ -416,7 +447,11 @@ static void releaseMonitor(_GLFWwindow* window)
     if (window->monitor->window != window)
         return;
 
-    _glfwInputMonitorWindowChange(window->monitor, NULL);
+    _glfw.win32.acquiredMonitorCount--;
+    if (!_glfw.win32.acquiredMonitorCount)
+        SetThreadExecutionState(ES_CONTINUOUS);
+
+    _glfwInputMonitorWindow(window->monitor, NULL);
     _glfwRestoreVideoModeWin32(window->monitor);
 }
 
@@ -436,7 +471,7 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
             {
                 if (wParam == DBT_DEVNODES_CHANGED)
                 {
-                    _glfwInputMonitorChange();
+                    _glfwPollMonitorsWin32();
                     return TRUE;
                 }
                 else if (wParam == DBT_DEVICEARRIVAL)
@@ -552,14 +587,15 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
 
             if (action == GLFW_RELEASE && wParam == VK_SHIFT)
             {
-                // Release both Shift keys on Shift up event, as only one event
-                // is sent even if both keys are released
+                // HACK: Release both Shift keys on Shift up event, as when both
+                //       are pressed the first release does not emit any event
+                // NOTE: The other half of this is in _glfwPlatformPollEvents
                 _glfwInputKey(window, GLFW_KEY_LEFT_SHIFT, scancode, action, mods);
                 _glfwInputKey(window, GLFW_KEY_RIGHT_SHIFT, scancode, action, mods);
             }
             else if (wParam == VK_SNAPSHOT)
             {
-                // Key down is not reported for the Print Screen key
+                // HACK: Key down is not reported for the Print Screen key
                 _glfwInputKey(window, key, scancode, GLFW_PRESS, mods);
                 _glfwInputKey(window, key, scancode, GLFW_RELEASE, mods);
             }
@@ -578,7 +614,7 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
         case WM_MBUTTONUP:
         case WM_XBUTTONUP:
         {
-            int button, action;
+            int i, button, action;
 
             if (uMsg == WM_LBUTTONDOWN || uMsg == WM_LBUTTONUP)
                 button = GLFW_MOUSE_BUTTON_LEFT;
@@ -595,15 +631,29 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
                 uMsg == WM_MBUTTONDOWN || uMsg == WM_XBUTTONDOWN)
             {
                 action = GLFW_PRESS;
-                SetCapture(hWnd);
             }
             else
-            {
                 action = GLFW_RELEASE;
-                ReleaseCapture();
+
+            for (i = 0;  i < GLFW_MOUSE_BUTTON_LAST;  i++)
+            {
+                if (window->mouseButtons[i] == GLFW_PRESS)
+                    break;
             }
 
+            if (i == GLFW_MOUSE_BUTTON_LAST)
+                SetCapture(hWnd);
+
             _glfwInputMouseClick(window, button, action, getKeyMods());
+
+            for (i = 0;  i < GLFW_MOUSE_BUTTON_LAST;  i++)
+            {
+                if (window->mouseButtons[i] == GLFW_PRESS)
+                    break;
+            }
+
+            if (i == GLFW_MOUSE_BUTTON_LAST)
+                ReleaseCapture();
 
             if (uMsg == WM_XBUTTONDOWN || uMsg == WM_XBUTTONUP)
                 return TRUE;
@@ -616,20 +666,11 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
             const int x = GET_X_LPARAM(lParam);
             const int y = GET_Y_LPARAM(lParam);
 
+            // Disabled cursor motion input is provided by WM_INPUT
             if (window->cursorMode == GLFW_CURSOR_DISABLED)
-            {
-                const int dx = x - window->win32.lastCursorPosX;
-                const int dy = y - window->win32.lastCursorPosY;
+                break;
 
-                if (_glfw.win32.disabledCursorWindow != window)
-                    break;
-
-                _glfwInputCursorPos(window,
-                                    window->virtualCursorPosX + dx,
-                                    window->virtualCursorPosY + dy);
-            }
-            else
-                _glfwInputCursorPos(window, x, y);
+            _glfwInputCursorPos(window, x, y);
 
             window->win32.lastCursorPosX = x;
             window->win32.lastCursorPosY = y;
@@ -650,6 +691,56 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
             return 0;
         }
 
+        case WM_INPUT:
+        {
+            UINT size;
+            HRAWINPUT ri = (HRAWINPUT) lParam;
+            RAWINPUT* data;
+            int dx, dy;
+
+            // Only process input when disabled cursor mode is applied
+            if (_glfw.win32.disabledCursorWindow != window)
+                break;
+
+            GetRawInputData(ri, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
+            if (size > (UINT) _glfw.win32.rawInputSize)
+            {
+                free(_glfw.win32.rawInput);
+                _glfw.win32.rawInput = calloc(size, 1);
+                _glfw.win32.rawInputSize = size;
+            }
+
+            size = _glfw.win32.rawInputSize;
+            if (GetRawInputData(ri, RID_INPUT,
+                                _glfw.win32.rawInput, &size,
+                                sizeof(RAWINPUTHEADER)) == (UINT) -1)
+            {
+                _glfwInputError(GLFW_PLATFORM_ERROR,
+                                "Win32: Failed to retrieve raw input data");
+                break;
+            }
+
+            data = _glfw.win32.rawInput;
+            if (data->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
+            {
+                dx = data->data.mouse.lLastX - window->win32.lastCursorPosX;
+                dy = data->data.mouse.lLastY - window->win32.lastCursorPosY;
+            }
+            else
+            {
+                dx = data->data.mouse.lLastX;
+                dy = data->data.mouse.lLastY;
+            }
+
+            _glfwInputCursorPos(window,
+                                window->virtualCursorPosX + dx,
+                                window->virtualCursorPosY + dy);
+
+            window->win32.lastCursorPosX += dx;
+            window->win32.lastCursorPosY += dy;
+            break;
+        }
+
         case WM_MOUSELEAVE:
         {
             window->win32.cursorTracked = GLFW_FALSE;
@@ -666,7 +757,7 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
         case WM_MOUSEHWHEEL:
         {
             // This message is only sent on Windows Vista and later
-            // NOTE: The X-axis is inverted for consistency with OS X and X11.
+            // NOTE: The X-axis is inverted for consistency with macOS and X11
             _glfwInputScroll(window, -((SHORT) HIWORD(wParam) / (double) WHEEL_DELTA), 0.0);
             return 0;
         }
@@ -691,36 +782,33 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
 
         case WM_SIZE:
         {
-            const GLFWbool iconified =
-                !window->win32.iconified && wParam == SIZE_MINIMIZED;
-            const GLFWbool restored =
-                window->win32.iconified &&
-                (wParam == SIZE_RESTORED || wParam == SIZE_MAXIMIZED);
+            const GLFWbool iconified = wParam == SIZE_MINIMIZED;
+            const GLFWbool maximized = wParam == SIZE_MAXIMIZED ||
+                                       (window->win32.maximized &&
+                                        wParam != SIZE_RESTORED);
 
             if (_glfw.win32.disabledCursorWindow == window)
                 updateClipRect(window);
 
-            if (iconified)
-                _glfwInputWindowIconify(window, GLFW_TRUE);
-            else if (restored)
-                _glfwInputWindowIconify(window, GLFW_FALSE);
+            if (window->win32.iconified != iconified)
+                _glfwInputWindowIconify(window, iconified);
+
+            if (window->win32.maximized != maximized)
+                _glfwInputWindowMaximize(window, maximized);
 
             _glfwInputFramebufferSize(window, LOWORD(lParam), HIWORD(lParam));
             _glfwInputWindowSize(window, LOWORD(lParam), HIWORD(lParam));
 
-            if (iconified)
+            if (window->monitor && window->win32.iconified != iconified)
             {
-                window->win32.iconified = GLFW_TRUE;
-                if (window->monitor)
+                if (iconified)
                     releaseMonitor(window);
-            }
-            else if (restored)
-            {
-                window->win32.iconified = GLFW_FALSE;
-                if (window->monitor)
+                else
                     acquireMonitor(window);
             }
 
+            window->win32.iconified = iconified;
+            window->win32.maximized = maximized;
             return 0;
         }
 
@@ -850,9 +938,10 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
     return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 
-// Creates the GLFW window and rendering context
+// Creates the GLFW window
 //
-static int createWindow(_GLFWwindow* window, const _GLFWwndconfig* wndconfig)
+static int createNativeWindow(_GLFWwindow* window,
+                              const _GLFWwndconfig* wndconfig)
 {
     int xpos, ypos, fullWidth, fullHeight;
     WCHAR* wideTitle;
@@ -865,7 +954,7 @@ static int createWindow(_GLFWwindow* window, const _GLFWwndconfig* wndconfig)
 
         // NOTE: This window placement is temporary and approximate, as the
         //       correct position and size cannot be known until the monitor
-        //       video mode has been set
+        //       video mode has been picked in _glfwSetVideoModeWin32
         _glfwPlatformGetMonitorPos(window->monitor, &xpos, &ypos);
         _glfwPlatformGetVideoMode(window->monitor, &mode);
         fullWidth  = mode.width;
@@ -886,11 +975,7 @@ static int createWindow(_GLFWwindow* window, const _GLFWwndconfig* wndconfig)
 
     wideTitle = _glfwCreateWideStringFromUTF8Win32(wndconfig->title);
     if (!wideTitle)
-    {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to convert window title to UTF-16");
         return GLFW_FALSE;
-    }
 
     window->win32.handle = CreateWindowExW(exStyle,
                                            _GLFW_WNDCLASSNAME,
@@ -907,7 +992,8 @@ static int createWindow(_GLFWwindow* window, const _GLFWwndconfig* wndconfig)
 
     if (!window->win32.handle)
     {
-        _glfwInputError(GLFW_PLATFORM_ERROR, "Win32: Failed to create window");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to create window");
         return GLFW_FALSE;
     }
 
@@ -926,21 +1012,6 @@ static int createWindow(_GLFWwindow* window, const _GLFWwndconfig* wndconfig)
     DragAcceptFiles(window->win32.handle, TRUE);
 
     return GLFW_TRUE;
-}
-
-// Destroys the GLFW window and rendering context
-//
-static void destroyWindow(_GLFWwindow* window)
-{
-    if (_glfw.win32.disabledCursorWindow == window)
-        _glfw.win32.disabledCursorWindow = NULL;
-
-    if (window->win32.handle)
-    {
-        RemovePropW(window->win32.handle, L"GLFW");
-        DestroyWindow(window->win32.handle);
-        window->win32.handle = NULL;
-    }
 }
 
 
@@ -976,8 +1047,8 @@ GLFWbool _glfwRegisterWindowClassWin32(void)
 
     if (!RegisterClassExW(&wc))
     {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to register window class");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to register window class");
         return GLFW_FALSE;
     }
 
@@ -1001,61 +1072,30 @@ int _glfwPlatformCreateWindow(_GLFWwindow* window,
                               const _GLFWctxconfig* ctxconfig,
                               const _GLFWfbconfig* fbconfig)
 {
-    int status;
-
-    if (!createWindow(window, wndconfig))
+    if (!createNativeWindow(window, wndconfig))
         return GLFW_FALSE;
 
     if (ctxconfig->client != GLFW_NO_API)
     {
         if (ctxconfig->source == GLFW_NATIVE_CONTEXT_API)
         {
+            if (!_glfwInitWGL())
+                return GLFW_FALSE;
             if (!_glfwCreateContextWGL(window, ctxconfig, fbconfig))
                 return GLFW_FALSE;
-
-            status = _glfwAnalyzeContextWGL(window, ctxconfig, fbconfig);
-
-            if (status == _GLFW_RECREATION_IMPOSSIBLE)
-                return GLFW_FALSE;
-
-            if (status == _GLFW_RECREATION_REQUIRED)
-            {
-                // Some window hints require us to re-create the context using WGL
-                // extensions retrieved through the current context, as we cannot
-                // check for WGL extensions or retrieve WGL entry points before we
-                // have a current context (actually until we have implicitly loaded
-                // the vendor ICD)
-
-                // Yes, this is strange, and yes, this is the proper way on WGL
-
-                // As Windows only allows you to set the pixel format once for
-                // a window, we need to destroy the current window and create a new
-                // one to be able to use the new pixel format
-
-                // Technically, it may be possible to keep the old window around if
-                // we're just creating an OpenGL 3.0+ context with the same pixel
-                // format, but it's not worth the added code complexity
-
-                // First we clear the current context (the one we just created)
-                // This is usually done by glfwDestroyWindow, but as we're not doing
-                // full GLFW window destruction, it's duplicated here
-                window->context.makeCurrent(NULL);
-
-                // Next destroy the Win32 window and WGL context (without resetting
-                // or destroying the GLFW window object)
-                window->context.destroy(window);
-                destroyWindow(window);
-
-                // ...and then create them again, this time with better APIs
-                if (!createWindow(window, wndconfig))
-                    return GLFW_FALSE;
-                if (!_glfwCreateContextWGL(window, ctxconfig, fbconfig))
-                    return GLFW_FALSE;
-            }
         }
-        else
+        else if (ctxconfig->source == GLFW_EGL_CONTEXT_API)
         {
+            if (!_glfwInitEGL())
+                return GLFW_FALSE;
             if (!_glfwCreateContextEGL(window, ctxconfig, fbconfig))
+                return GLFW_FALSE;
+        }
+        else if (ctxconfig->source == GLFW_OSMESA_CONTEXT_API)
+        {
+            if (!_glfwInitOSMesa())
+                return GLFW_FALSE;
+            if (!_glfwCreateContextOSMesa(window, ctxconfig, fbconfig))
                 return GLFW_FALSE;
         }
     }
@@ -1067,7 +1107,8 @@ int _glfwPlatformCreateWindow(_GLFWwindow* window,
         if (!acquireMonitor(window))
             return GLFW_FALSE;
 
-        centerCursor(window);
+        if (wndconfig->centerCursor)
+            centerCursor(window);
     }
 
     return GLFW_TRUE;
@@ -1078,10 +1119,18 @@ void _glfwPlatformDestroyWindow(_GLFWwindow* window)
     if (window->monitor)
         releaseMonitor(window);
 
-    if (window->context.client != GLFW_NO_API)
+    if (window->context.destroy)
         window->context.destroy(window);
 
-    destroyWindow(window);
+    if (_glfw.win32.disabledCursorWindow == window)
+        _glfw.win32.disabledCursorWindow = NULL;
+
+    if (window->win32.handle)
+    {
+        RemovePropW(window->win32.handle, L"GLFW");
+        DestroyWindow(window->win32.handle);
+        window->win32.handle = NULL;
+    }
 
     if (window->win32.bigIcon)
         DestroyIcon(window->win32.bigIcon);
@@ -1094,11 +1143,7 @@ void _glfwPlatformSetWindowTitle(_GLFWwindow* window, const char* title)
 {
     WCHAR* wideTitle = _glfwCreateWideStringFromUTF8Win32(title);
     if (!wideTitle)
-    {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to convert window title to UTF-16");
         return;
-    }
 
     SetWindowTextW(window->win32.handle, wideTitle);
     free(wideTitle);
@@ -1391,6 +1436,23 @@ int _glfwPlatformWindowMaximized(_GLFWwindow* window)
     return IsZoomed(window->win32.handle);
 }
 
+void _glfwPlatformSetWindowResizable(_GLFWwindow* window, GLFWbool enabled)
+{
+    updateWindowStyles(window);
+}
+
+void _glfwPlatformSetWindowDecorated(_GLFWwindow* window, GLFWbool enabled)
+{
+    updateWindowStyles(window);
+}
+
+void _glfwPlatformSetWindowFloating(_GLFWwindow* window, GLFWbool enabled)
+{
+    const HWND after = enabled ? HWND_TOPMOST : HWND_NOTOPMOST;
+    SetWindowPos(window->win32.handle, after, 0, 0, 0, 0,
+                 SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
+}
+
 void _glfwPlatformPollEvents(void)
 {
     MSG msg;
@@ -1401,9 +1463,9 @@ void _glfwPlatformPollEvents(void)
     {
         if (msg.message == WM_QUIT)
         {
-            // Treat WM_QUIT as a close on all windows
-            // While GLFW does not itself post WM_QUIT, other processes may post
-            // it to this one, for example Task Manager
+            // NOTE: While GLFW does not itself post WM_QUIT, other processes
+            //       may post it to this one, for example Task Manager
+            // HACK: Treat WM_QUIT as a close on all windows
 
             window = _glfw.windowListHead;
             while (window)
@@ -1422,25 +1484,28 @@ void _glfwPlatformPollEvents(void)
     handle = GetActiveWindow();
     if (handle)
     {
-        // LSHIFT/RSHIFT fixup (keys tend to "stick" without this fix)
-        // This is the only async event handling in GLFW, but it solves some
-        // nasty problems
+        // NOTE: Shift keys on Windows tend to "stick" when both are pressed as
+        //       no key up message is generated by the first key release
+        //       The other half of this is in the handling of WM_KEYUP
+        // HACK: Query actual key state and synthesize release events as needed
         window = GetPropW(handle, L"GLFW");
         if (window)
         {
-            const int mods = getAsyncKeyMods();
+            const GLFWbool lshift = (GetAsyncKeyState(VK_LSHIFT) >> 15) & 1;
+            const GLFWbool rshift = (GetAsyncKeyState(VK_RSHIFT) >> 15) & 1;
 
-            // Get current state of left and right shift keys
-            const int lshiftDown = (GetAsyncKeyState(VK_LSHIFT) >> 15) & 1;
-            const int rshiftDown = (GetAsyncKeyState(VK_RSHIFT) >> 15) & 1;
-
-            // See if this differs from our belief of what has happened
-            // (we only have to check for lost key up events)
-            if (!lshiftDown && window->keys[GLFW_KEY_LEFT_SHIFT] == 1)
-                _glfwInputKey(window, GLFW_KEY_LEFT_SHIFT, 0, GLFW_RELEASE, mods);
-
-            if (!rshiftDown && window->keys[GLFW_KEY_RIGHT_SHIFT] == 1)
-                _glfwInputKey(window, GLFW_KEY_RIGHT_SHIFT, 0, GLFW_RELEASE, mods);
+            if (!lshift && window->keys[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS)
+            {
+                const int mods = getAsyncKeyMods();
+                const int scancode = _glfw.win32.scancodes[GLFW_KEY_LEFT_SHIFT];
+                _glfwInputKey(window, GLFW_KEY_LEFT_SHIFT, scancode, GLFW_RELEASE, mods);
+            }
+            else if (!rshift && window->keys[GLFW_KEY_RIGHT_SHIFT] == GLFW_PRESS)
+            {
+                const int mods = getAsyncKeyMods();
+                const int scancode = _glfw.win32.scancodes[GLFW_KEY_RIGHT_SHIFT];
+                _glfwInputKey(window, GLFW_KEY_RIGHT_SHIFT, scancode, GLFW_RELEASE, mods);
+            }
         }
     }
 
@@ -1476,8 +1541,7 @@ void _glfwPlatformWaitEventsTimeout(double timeout)
 
 void _glfwPlatformPostEmptyEvent(void)
 {
-    _GLFWwindow* window = _glfw.windowListHead;
-    PostMessage(window->win32.handle, WM_NULL, 0, 0);
+    PostMessage(_glfw.win32.helperWindowHandle, WM_NULL, 0, 0);
 }
 
 void _glfwPlatformGetCursorPos(_GLFWwindow* window, double* xpos, double* ypos)
@@ -1511,20 +1575,36 @@ void _glfwPlatformSetCursorMode(_GLFWwindow* window, int mode)
 {
     if (mode == GLFW_CURSOR_DISABLED)
     {
+        const RAWINPUTDEVICE rid = { 0x01, 0x02, 0, window->win32.handle };
+
         _glfw.win32.disabledCursorWindow = window;
         _glfwPlatformGetCursorPos(window,
                                   &_glfw.win32.restoreCursorPosX,
                                   &_glfw.win32.restoreCursorPosY);
         centerCursor(window);
         updateClipRect(window);
+
+        if (!RegisterRawInputDevices(&rid, 1, sizeof(rid)))
+        {
+            _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                                 "Win32: Failed to register raw input device");
+        }
     }
     else if (_glfw.win32.disabledCursorWindow == window)
     {
+        const RAWINPUTDEVICE rid = { 0x01, 0x02, RIDEV_REMOVE, NULL };
+
         _glfw.win32.disabledCursorWindow = NULL;
         updateClipRect(NULL);
         _glfwPlatformSetCursorPos(window,
                                   _glfw.win32.restoreCursorPosX,
                                   _glfw.win32.restoreCursorPosY);
+
+        if (!RegisterRawInputDevices(&rid, 1, sizeof(rid)))
+        {
+            _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                                 "Win32: Failed to remove raw input device");
+        }
     }
 
     if (cursorInClientArea(window))
@@ -1536,9 +1616,9 @@ const char* _glfwPlatformGetKeyName(int key, int scancode)
     WCHAR name[16];
 
     if (key != GLFW_KEY_UNKNOWN)
-        scancode = _glfw.win32.nativeKeys[key];
+        scancode = _glfw.win32.scancodes[key];
 
-    if (!_glfwIsPrintable(_glfw.win32.publicKeys[scancode]))
+    if (!_glfwIsPrintable(_glfw.win32.keycodes[scancode]))
         return NULL;
 
     if (!GetKeyNameTextW(scancode << 16, name, sizeof(name) / sizeof(WCHAR)))
@@ -1553,6 +1633,11 @@ const char* _glfwPlatformGetKeyName(int key, int scancode)
     }
 
     return _glfw.win32.keyName;
+}
+
+int _glfwPlatformGetKeyScancode(int key)
+{
+    return _glfw.win32.scancodes[key];
 }
 
 int _glfwPlatformCreateCursor(_GLFWcursor* cursor,
@@ -1572,8 +1657,8 @@ int _glfwPlatformCreateStandardCursor(_GLFWcursor* cursor, int shape)
         CopyCursor(LoadCursorW(NULL, translateCursorShape(shape)));
     if (!cursor->win32.handle)
     {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to create standard cursor");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to create standard cursor");
         return GLFW_FALSE;
     }
 
@@ -1594,101 +1679,93 @@ void _glfwPlatformSetCursor(_GLFWwindow* window, _GLFWcursor* cursor)
 
 void _glfwPlatformSetClipboardString(_GLFWwindow* window, const char* string)
 {
-    WCHAR* wideString;
-    HANDLE stringHandle;
-    size_t wideSize;
+    int characterCount;
+    HANDLE object;
+    WCHAR* buffer;
 
-    wideString = _glfwCreateWideStringFromUTF8Win32(string);
-    if (!wideString)
+    characterCount = MultiByteToWideChar(CP_UTF8, 0, string, -1, NULL, 0);
+    if (!characterCount)
+        return;
+
+    object = GlobalAlloc(GMEM_MOVEABLE, characterCount * sizeof(WCHAR));
+    if (!object)
     {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to convert string to UTF-16");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to allocate global handle for clipboard");
         return;
     }
 
-    wideSize = (wcslen(wideString) + 1) * sizeof(WCHAR);
-
-    stringHandle = GlobalAlloc(GMEM_MOVEABLE, wideSize);
-    if (!stringHandle)
+    buffer = GlobalLock(object);
+    if (!buffer)
     {
-        free(wideString);
-
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to allocate global handle for clipboard");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to lock global handle");
+        GlobalFree(object);
         return;
     }
 
-    memcpy(GlobalLock(stringHandle), wideString, wideSize);
-    GlobalUnlock(stringHandle);
+    MultiByteToWideChar(CP_UTF8, 0, string, -1, buffer, characterCount);
+    GlobalUnlock(object);
 
     if (!OpenClipboard(_glfw.win32.helperWindowHandle))
     {
-        GlobalFree(stringHandle);
-        free(wideString);
-
-        _glfwInputError(GLFW_PLATFORM_ERROR, "Win32: Failed to open clipboard");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to open clipboard");
+        GlobalFree(object);
         return;
     }
 
     EmptyClipboard();
-    SetClipboardData(CF_UNICODETEXT, stringHandle);
+    SetClipboardData(CF_UNICODETEXT, object);
     CloseClipboard();
-
-    free(wideString);
 }
 
 const char* _glfwPlatformGetClipboardString(_GLFWwindow* window)
 {
-    HANDLE stringHandle;
+    HANDLE object;
+    WCHAR* buffer;
 
     if (!OpenClipboard(_glfw.win32.helperWindowHandle))
     {
-        _glfwInputError(GLFW_PLATFORM_ERROR, "Win32: Failed to open clipboard");
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to open clipboard");
         return NULL;
     }
 
-    stringHandle = GetClipboardData(CF_UNICODETEXT);
-    if (!stringHandle)
+    object = GetClipboardData(CF_UNICODETEXT);
+    if (!object)
     {
+        _glfwInputErrorWin32(GLFW_FORMAT_UNAVAILABLE,
+                             "Win32: Failed to convert clipboard to string");
         CloseClipboard();
+        return NULL;
+    }
 
-        _glfwInputError(GLFW_FORMAT_UNAVAILABLE,
-                        "Win32: Failed to convert clipboard to string");
+    buffer = GlobalLock(object);
+    if (!buffer)
+    {
+        _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+                             "Win32: Failed to lock global handle");
+        CloseClipboard();
         return NULL;
     }
 
     free(_glfw.win32.clipboardString);
-    _glfw.win32.clipboardString =
-        _glfwCreateUTF8FromWideStringWin32(GlobalLock(stringHandle));
+    _glfw.win32.clipboardString = _glfwCreateUTF8FromWideStringWin32(buffer);
 
-    GlobalUnlock(stringHandle);
+    GlobalUnlock(object);
     CloseClipboard();
-
-    if (!_glfw.win32.clipboardString)
-    {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to convert wide string to UTF-8");
-        return NULL;
-    }
 
     return _glfw.win32.clipboardString;
 }
 
-char** _glfwPlatformGetRequiredInstanceExtensions(uint32_t* count)
+void _glfwPlatformGetRequiredInstanceExtensions(char** extensions)
 {
-    char** extensions;
+    if (!_glfw.vk.KHR_surface || !_glfw.vk.KHR_win32_surface)
+        return;
 
-    *count = 0;
-
-    if (!_glfw.vk.KHR_win32_surface)
-        return NULL;
-
-    extensions = calloc(2, sizeof(char*));
-    extensions[0] = strdup("VK_KHR_surface");
-    extensions[1] = strdup("VK_KHR_win32_surface");
-
-    *count = 2;
-    return extensions;
+    extensions[0] = "VK_KHR_surface";
+    extensions[1] = "VK_KHR_win32_surface";
 }
 
 int _glfwPlatformGetPhysicalDevicePresentationSupport(VkInstance instance,
