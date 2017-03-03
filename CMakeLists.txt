@@ -277,6 +277,11 @@ if (_GLFW_X11)
         message(FATAL_ERROR "The Xcursor libraries and headers were not found")
     endif()
 
+    # Check for Xi
+    if (NOT X11_Xi_FOUND)
+        message(FATAL_ERROR "The Xi libraries and headers were not found")
+    endif()
+
     list(APPEND glfw_INCLUDE_DIR "${X11_Xcursor_INCLUDE_PATH}")
     list(APPEND glfw_LIBRARIES "${X11_Xcursor_LIB}")
     list(APPEND glfw_PKG_DEPS "xcursor")
