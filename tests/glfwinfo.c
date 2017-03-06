@@ -1,6 +1,6 @@
 //========================================================================
 // Context creation and information tool
-// Copyright (c) Camilla Berglund <elmindreda@glfw.org>
+// Copyright (c) Camilla Löwy <elmindreda@glfw.org>
 //
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -43,6 +43,7 @@
 
 #define API_NAME_NATIVE     "native"
 #define API_NAME_EGL        "egl"
+#define API_NAME_OSMESA     "osmesa"
 
 #define PROFILE_NAME_CORE   "core"
 #define PROFILE_NAME_COMPAT "compat"
@@ -65,7 +66,8 @@ static void usage(void)
                                         BEHAVIOR_NAME_FLUSH ")\n");
     printf("  -c, --context-api=API     the context creation API to use ("
                                         API_NAME_NATIVE " or "
-                                        API_NAME_EGL ")\n");
+                                        API_NAME_EGL " or "
+                                        API_NAME_OSMESA ")\n");
     printf("  -d, --debug               request a debug context\n");
     printf("  -f, --forward             require a forward-compatible context\n");
     printf("  -h, --help                show this help\n");
@@ -357,7 +359,7 @@ static void print_version(void)
 
 int main(int argc, char** argv)
 {
-    int ch, client, context, major, minor, revision, profile;
+    int ch, client, major, minor, revision, profile;
     GLint redbits, greenbits, bluebits, alphabits, depthbits, stencilbits;
     int list_extensions = GLFW_FALSE, list_layers = GLFW_FALSE;
     GLenum error;
@@ -409,10 +411,12 @@ int main(int argc, char** argv)
 
     glfwSetErrorCallback(error_callback);
 
+    glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+
     if (!glfwInit())
         exit(EXIT_FAILURE);
 
-    while ((ch = getopt_long(argc, argv, "a:b:dfhlm:n:p:s:v", options, NULL)) != -1)
+    while ((ch = getopt_long(argc, argv, "a:b:c:dfhlm:n:p:s:v", options, NULL)) != -1)
     {
         switch (ch)
         {
@@ -452,6 +456,8 @@ int main(int argc, char** argv)
                     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
                 else if (strcasecmp(optarg, API_NAME_EGL) == 0)
                     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+                else if (strcasecmp(optarg, API_NAME_OSMESA) == 0)
+                    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_OSMESA_CONTEXT_API);
                 else
                 {
                     usage();
@@ -636,7 +642,6 @@ int main(int argc, char** argv)
     // Report client API version
 
     client = glfwGetWindowAttrib(window, GLFW_CLIENT_API);
-    context = glfwGetWindowAttrib(window, GLFW_CONTEXT_CREATION_API);
     major = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MAJOR);
     minor = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
     revision = glfwGetWindowAttrib(window, GLFW_CONTEXT_REVISION);
@@ -699,7 +704,7 @@ int main(int argc, char** argv)
                    get_profile_name_glfw(profile));
         }
 
-        if (glfwExtensionSupported("GL_ARB_robustness"))
+        if (GLAD_GL_ARB_robustness)
         {
             const int robustness = glfwGetWindowAttrib(window, GLFW_CONTEXT_ROBUSTNESS);
             GLint strategy;
@@ -773,7 +778,7 @@ int main(int argc, char** argv)
            redbits, greenbits, bluebits, alphabits, depthbits, stencilbits);
 
     if (client == GLFW_OPENGL_ES_API ||
-        glfwExtensionSupported("GL_ARB_multisample") ||
+        GLAD_GL_ARB_multisample ||
         major > 1 || minor >= 3)
     {
         GLint samples, samplebuffers;
@@ -801,7 +806,7 @@ int main(int argc, char** argv)
     if (list_extensions)
         list_context_extensions(client, major, minor);
 
-    printf("Vulkan loader: %s\n",
+    printf("Vulkan support: %s\n",
            glfwVulkanSupported() ? "available" : "missing");
 
     if (glfwVulkanSupported())
@@ -821,9 +826,14 @@ int main(int argc, char** argv)
         re = glfwGetRequiredInstanceExtensions(&re_count);
 
         printf("Vulkan required instance extensions:");
-        for (i = 0;  i < re_count;  i++)
-            printf(" %s", re[i]);
-        putchar('\n');
+        if (re)
+        {
+            for (i = 0;  i < re_count;  i++)
+                printf(" %s", re[i]);
+            putchar('\n');
+        }
+        else
+            printf(" missing\n");
 
         if (list_extensions)
             list_vulkan_instance_extensions();

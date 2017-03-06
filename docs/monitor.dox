@@ -5,12 +5,13 @@
 @tableofcontents
 
 This guide introduces the monitor related functions of GLFW.  For details on
-a specific function, see the [reference documentation](@ref monitor).  There are
-also guides for the other areas of GLFW.
+a specific function in this category, see the @ref monitor.  There are also
+guides for the other areas of GLFW.
 
  - @ref intro_guide
  - @ref window_guide
  - @ref context_guide
+ - @ref vulkan_guide
  - @ref input_guide
 
 
@@ -211,5 +212,13 @@ glfwSetGammaRamp with the resulting ramp.
 @code
 glfwSetGamma(monitor, 1.0);
 @endcode
+
+To experiment with gamma correction via the @ref glfwSetGamma function, run the
+`gamma` test program.
+
+@note The software controlled gamma ramp is applied _in addition_ to the
+hardware gamma correction, which today is usually an approximation of sRGB
+gamma.  This means that setting a perfectly linear ramp, or gamma 1.0, will
+produce the default (usually sRGB-like) behavior.
 
 */
