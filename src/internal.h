@@ -325,6 +325,7 @@ struct _GLFWfbconfig
     int         samples;
     GLFWbool    sRGB;
     GLFWbool    doublebuffer;
+    GLFWbool    floatbuffer;
     GLFWbool    transparent;
     uintptr_t   handle;
 };

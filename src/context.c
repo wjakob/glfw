@@ -200,6 +200,12 @@ const _GLFWfbconfig* _glfwChooseFBConfig(const _GLFWfbconfig* desired,
             continue;
         }
 
+        if (desired->floatbuffer != current->floatbuffer)
+        {
+            // Double buffering is a hard constraint
+            continue;
+        }
+
         // Count number of missing buffers
         {
             missing = 0;
