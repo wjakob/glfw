@@ -170,6 +170,7 @@ resulting context and framebuffer may differ from what these hints requested.
 The following hints are always hard constraints:
 - @ref GLFW_STEREO
 - @ref GLFW_DOUBLEBUFFER
+- @ref GLFW_FLOATBUFFER
 - [GLFW_CLIENT_API](@ref GLFW_CLIENT_API_hint)
 - [GLFW_CONTEXT_CREATION_API](@ref GLFW_CONTEXT_CREATION_API_hint)
 
@@ -315,6 +316,12 @@ __GLFW_DOUBLEBUFFER__ specifies whether the framebuffer should be double
 buffered.  You nearly always want to use double buffering.  This is a hard
 constraint.  Possible values are `GLFW_TRUE` and `GLFW_FALSE`.
 
+@anchor GLFW_FLOATBUFFER
+__GLFW_FLOATBUFFER__ specifies whether a floating point framebuffer should
+be used. This is needed for high dynamic range and large-gamut rendering (e.g.
+with an extendes sRGB gamut), where pixel values are allowed to be negative.
+This is a hard constraint. Possible values are `GLFW_TRUE` and `GLFW_FALSE`.
+The default is `GLFW_FALSE`.
 
 @subsubsection window_hints_mtr Monitor related hints
 

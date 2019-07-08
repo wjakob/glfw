@@ -985,6 +985,12 @@ extern "C" {
  */
 #define GLFW_DOUBLEBUFFER           0x00021010
 
+/*! @brief Floating point framebuffer hint.
+ *
+ *  Floating point framebuffer [hint](@ref GLFW_FLOATBUFFER).
+ */
+#define GLFW_FLOATBUFFER           0x00021011
+
 /*! @brief Context client API hint and attribute.
  *
  *  Context client API [hint](@ref GLFW_CLIENT_API_hint) and
