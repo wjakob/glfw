@@ -157,7 +157,7 @@ static int choosePixelFormat(_GLFWwindow* window,
                 continue;
             }
 
-            if (findAttribValue(WGL_PIXEL_TYPE_ARB) != WGL_TYPE_RGBA_ARB
+            if (findAttribValue(WGL_PIXEL_TYPE_ARB) != WGL_TYPE_RGBA_ARB &&
                 findAttribValue(WGL_PIXEL_TYPE_ARB) != WGL_TYPE_RGBA_FLOAT_ARB)
                 continue;
 
