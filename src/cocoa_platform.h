@@ -158,6 +158,8 @@ typedef struct _GLFWwindowNS
     double          cursorWarpDeltaX, cursorWarpDeltaY;
 } _GLFWwindowNS;
 
+typedef void (*GLFWopenedFilenamesFun)(const char*);
+
 // Cocoa-specific global data
 //
 typedef struct _GLFWlibraryNS
@@ -182,6 +184,7 @@ typedef struct _GLFWlibraryNS
     // The window whose disabled cursor mode is active
     _GLFWwindow*        disabledCursorWindow;
     char**              openedFilenames;
+    GLFWopenedFilenamesFun openedFilenamesCallback;
 
     struct {
         CFBundleRef     bundle;
