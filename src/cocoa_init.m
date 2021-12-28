@@ -459,6 +459,9 @@ static GLFWbool initializeTIS(void)
         NSString* filename = [filenames objectAtIndex:i];
         const char* filenameStr = [filename UTF8String];
         _glfw.ns.openedFilenames[i] = _glfw_strdup(filenameStr);
+        if (_glfw.ns.openedFilenamesCallback) {
+            _glfw.ns.openedFilenamesCallback(_glfw.ns.openedFilenames[i]);
+        }
     }
 }
 
@@ -588,6 +591,8 @@ GLFWbool _glfwConnectCocoa(int platformID, _GLFWplatform* platform)
 int _glfwInitCocoa(void)
 {
     @autoreleasepool {
+
+    _glfw.ns.openedFilenamesCallback = NULL;
 
     _glfw.ns.helper = [[GLFWHelper alloc] init];
 
@@ -724,4 +729,9 @@ void _glfwTerminateCocoa(void)
 const char* const* glfwGetOpenedFilenames(void)
 {
     return (const char* const*) _glfw.ns.openedFilenames;
+}
+
+void glfwSetOpenedFilenamesCallback(GLFWopenedFilenamesFun callback)
+{
+    _glfw.ns.openedFilenamesCallback = callback;
 }
