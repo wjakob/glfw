@@ -26,6 +26,7 @@
 //
 //========================================================================
 
+#include "GLFW/glfw3.h"
 #include "internal.h"
 
 #include <assert.h>
@@ -286,6 +287,7 @@ void glfwDefaultWindowHints(void)
     _glfw.hints.framebuffer.depthBits    = 24;
     _glfw.hints.framebuffer.stencilBits  = 8;
     _glfw.hints.framebuffer.doublebuffer = true;
+    _glfw.hints.framebuffer.floatbuffer  = false;
 
     // The default is to select the highest available refresh rate
     _glfw.hints.refreshRate = GLFW_DONT_CARE;
@@ -335,6 +337,9 @@ GLFWAPI void glfwWindowHint(int hint, int value)
             return;
         case GLFW_DOUBLEBUFFER:
             _glfw.hints.framebuffer.doublebuffer = value;
+            return;
+        case GLFW_FLOATBUFFER:
+            _glfw.hints.framebuffer.floatbuffer = value ? GLFW_TRUE : GLFW_FALSE;
             return;
         case GLFW_TRANSPARENT_FRAMEBUFFER:
             _glfw.hints.framebuffer.transparent = value;
