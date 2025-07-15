@@ -82,7 +82,8 @@ static GLFWbool chooseGLXFBConfig(const _GLFWfbconfig* desired,
         _GLFWfbconfig* u = usableConfigs + usableCount;
 
         // Only consider RGBA GLXFBConfigs
-        if (!(getGLXFBConfigAttrib(n, GLX_RENDER_TYPE) & GLX_RGBA_BIT))
+        if (!(getGLXFBConfigAttrib(n, GLX_RENDER_TYPE) & GLX_RGBA_BIT) &&
+            !(getGLXFBConfigAttrib(n, GLX_RENDER_TYPE) & GLX_RGBA_FLOAT_BIT))
             continue;
 
         // Only consider window GLXFBConfigs
@@ -122,6 +123,8 @@ static GLFWbool chooseGLXFBConfig(const _GLFWfbconfig* desired,
 
         if (getGLXFBConfigAttrib(n, GLX_STEREO))
             u->stereo = GLFW_TRUE;
+
+        u->floatbuffer = (getGLXFBConfigAttrib(n, GLX_RENDER_TYPE) & GLX_RGBA_FLOAT_BIT) != 0;
 
         if (_glfw.glx.ARB_multisample)
             u->samples = getGLXFBConfigAttrib(n, GLX_SAMPLES);

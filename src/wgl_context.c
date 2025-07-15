@@ -163,7 +163,8 @@ static int choosePixelFormatWGL(_GLFWwindow* window,
                 continue;
             }
 
-            if (FIND_ATTRIB_VALUE(WGL_PIXEL_TYPE_ARB) != WGL_TYPE_RGBA_ARB)
+            if (FIND_ATTRIB_VALUE(WGL_PIXEL_TYPE_ARB) != WGL_TYPE_RGBA_ARB &&
+                FIND_ATTRIB_VALUE(WGL_PIXEL_TYPE_ARB) != WGL_TYPE_RGBA_FLOAT_ARB)
                 continue;
 
             if (FIND_ATTRIB_VALUE(WGL_ACCELERATION_ARB) == WGL_NO_ACCELERATION_ARB)
@@ -186,6 +187,7 @@ static int choosePixelFormatWGL(_GLFWwindow* window,
             u->accumAlphaBits = FIND_ATTRIB_VALUE(WGL_ACCUM_ALPHA_BITS_ARB);
 
             u->auxBuffers = FIND_ATTRIB_VALUE(WGL_AUX_BUFFERS_ARB);
+            u->floatbuffer = FIND_ATTRIB_VALUE(WGL_PIXEL_TYPE_ARB) == WGL_TYPE_RGBA_FLOAT_ARB;
 
             if (FIND_ATTRIB_VALUE(WGL_STEREO_ARB))
                 u->stereo = GLFW_TRUE;
