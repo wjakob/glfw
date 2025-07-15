@@ -242,6 +242,12 @@ void _glfwSetWindowPosNull(_GLFWwindow* window, int xpos, int ypos)
     }
 }
 
+GLFWhdrconfig* _glfwGetHDRConfigNull(_GLFWwindow* window)
+{
+    // Null does not support HDR
+    return NULL;
+}
+
 void _glfwGetWindowSizeNull(_GLFWwindow* window, int* width, int* height)
 {
     if (width)
