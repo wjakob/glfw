@@ -385,6 +385,8 @@ typedef struct _GLFWwindowWayland
         struct libdecor_frame*  frame;
     } libdecor;
 
+    GLFWhdrconfig*              hdrConfig;
+
     _GLFWcursor*                currentCursor;
     double                      cursorPosX, cursorPosY;
 
@@ -400,6 +402,8 @@ typedef struct _GLFWwindowWayland
     struct wp_viewport*             scalingViewport;
     uint32_t                        scalingNumerator;
     struct wp_fractional_scale_v1*  fractionalScale;
+    struct wp_color_management_surface_v1*  colorSurface;
+    struct wp_color_management_surface_feedback_v1*  colorSurfaceFeedback;
 
     struct zwp_relative_pointer_v1* relativePointer;
     struct zwp_locked_pointer_v1*   lockedPointer;
@@ -438,6 +442,22 @@ typedef struct _GLFWlibraryWayland
     struct zwp_idle_inhibit_manager_v1*     idleInhibitManager;
     struct xdg_activation_v1*               activationManager;
     struct wp_fractional_scale_manager_v1*  fractionalScaleManager;
+    struct wp_color_manager_v1*             colorManager;
+
+    struct {
+        GLFWbool parametric;
+        GLFWbool icc;
+        GLFWbool setPrimaries;
+        GLFWbool setTfPower;
+        GLFWbool setLuminance;
+        GLFWbool setMasteringDisplayPrimaries;
+        GLFWbool setExtendedTargetVolume;
+        GLFWbool windowsScrgb;
+
+        GLFWbool primaries[11];
+        GLFWbool tfs[14];
+        GLFWbool intents[4];
+    } colorManagerSupport;
 
     _GLFWofferWayland*          offers;
     unsigned int                offerCount;
@@ -621,6 +641,7 @@ void _glfwSetWindowTitleWayland(_GLFWwindow* window, const char* title);
 void _glfwSetWindowIconWayland(_GLFWwindow* window, int count, const GLFWimage* images);
 void _glfwGetWindowPosWayland(_GLFWwindow* window, int* xpos, int* ypos);
 void _glfwSetWindowPosWayland(_GLFWwindow* window, int xpos, int ypos);
+GLFWhdrconfig* _glfwGetHDRConfigWayland(_GLFWwindow* window);
 void _glfwGetWindowSizeWayland(_GLFWwindow* window, int* width, int* height);
 void _glfwSetWindowSizeWayland(_GLFWwindow* window, int width, int height);
 void _glfwSetWindowSizeLimitsWayland(_GLFWwindow* window, int minwidth, int minheight, int maxwidth, int maxheight);

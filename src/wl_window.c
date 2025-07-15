@@ -51,6 +51,7 @@
 #include "xdg-activation-v1-client-protocol.h"
 #include "idle-inhibit-unstable-v1-client-protocol.h"
 #include "fractional-scale-v1-client-protocol.h"
+#include "color-management-v1-client-protocol.h"
 
 #define GLFW_BORDER_SIZE    4
 #define GLFW_CAPTION_HEIGHT 24
@@ -553,6 +554,251 @@ void fractionalScaleHandlePreferredScale(void* userData,
 const struct wp_fractional_scale_v1_listener fractionalScaleListener =
 {
     fractionalScaleHandlePreferredScale,
+};
+
+#define WAYLAND_COLOR_FACTOR 1000000
+#define WAYLAND_MIN_LUMINANCE_FACTOR 10000
+
+void imageDescriptionHandleDone(void *userData, struct wp_image_description_info_v1 *image_description_info)
+{
+    wp_image_description_info_v1_destroy(image_description_info);
+}
+
+void imageDescriptionHandleIccFile(void *userData, struct wp_image_description_info_v1 *image_description_info, int32_t icc, uint32_t icc_size)
+{
+    printf("Wayland: ICC profile support is not implemented yet.\n");
+}
+
+void imageDescriptionHandlePrimaries(void *userData, struct wp_image_description_info_v1 *image_description_info, int32_t r_x, int32_t r_y, int32_t g_x, int32_t g_y, int32_t b_x, int32_t b_y, int32_t w_x, int32_t w_y)
+{
+    printf("Wayland: Primaries support is not implemented yet.\n");
+    _GLFWwindow* window = userData;
+    GLFWhdrconfig* hdrConfig = window->wl.hdrConfig;
+    if (!hdrConfig)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: No HDR config available for window");
+        return;
+    }
+
+    float surface_primary_red_x = (float)r_x / WAYLAND_COLOR_FACTOR;
+    float surface_primary_red_y = (float)r_y / WAYLAND_COLOR_FACTOR;
+    float surface_primary_green_x = (float)g_x / WAYLAND_COLOR_FACTOR;
+    float surface_primary_green_y = (float)g_y / WAYLAND_COLOR_FACTOR;
+    float surface_primary_blue_x = (float)b_x / WAYLAND_COLOR_FACTOR;
+    float surface_primary_blue_y = (float)b_y / WAYLAND_COLOR_FACTOR;
+    float surface_white_point_x = (float)w_x / WAYLAND_COLOR_FACTOR;
+    float surface_white_point_y = (float)w_y / WAYLAND_COLOR_FACTOR;
+
+    printf("Wayland: Surface primaries set to R(%f, %f), G(%f, %f), B(%f, %f), W(%f, %f)\n",
+          surface_primary_red_x, surface_primary_red_y,
+          surface_primary_green_x, surface_primary_green_y,
+          surface_primary_blue_x, surface_primary_blue_y,
+          surface_white_point_x, surface_white_point_y);
+}
+
+void imageDescriptionHandlePrimariesNamed(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t primaries)
+{
+    _GLFWwindow* window = userData;
+    GLFWhdrconfig* hdrConfig = window->wl.hdrConfig;
+    if (!hdrConfig)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: No HDR config available for window");
+        return;
+    }
+
+    // Translate Wayland transfer function to H.273 code points 
+    switch (primaries)
+    {
+        case WP_COLOR_MANAGER_V1_PRIMARIES_SRGB: hdrConfig->primaries = 1; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_PAL_M: hdrConfig->primaries = 4; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_PAL: hdrConfig->primaries = 5; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_NTSC: hdrConfig->primaries = 6; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_GENERIC_FILM: hdrConfig->primaries = 8; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_BT2020: hdrConfig->primaries = 9; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_CIE1931_XYZ: hdrConfig->primaries = 10; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3: hdrConfig->primaries = 11; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3: hdrConfig->primaries = 12; break;
+        case WP_COLOR_MANAGER_V1_PRIMARIES_ADOBE_RGB: hdrConfig->primaries = 256; break; // Adobe RGB is not defined in H.273, use 256 as a placeholder
+        default:
+            _glfwInputError(GLFW_PLATFORM_ERROR,
+                            "Wayland: Unknown primaries %d", primaries);
+            return;
+    }
+}
+
+void imageDescriptionHandlePower(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t eexp)
+{
+    printf("Wayland: Tf power set to %d.\n", eexp);
+}
+
+void imageDescriptionHandleTransferFunctionNamed(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t tf)
+{
+    _GLFWwindow* window = userData;
+    GLFWhdrconfig* hdrConfig = window->wl.hdrConfig;
+    if (!hdrConfig)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: No HDR config available for window");
+        return;
+    }
+
+    // Translate Wayland transfer function to H.273 code points 
+    switch (tf)
+    {
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_BT1886: hdrConfig->transfer_function = 1; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22: hdrConfig->transfer_function = 4; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA28: hdrConfig->transfer_function = 5; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST240: hdrConfig->transfer_function = 7; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR: hdrConfig->transfer_function = 8; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_LOG_100: hdrConfig->transfer_function = 9; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_LOG_316: hdrConfig->transfer_function = 10; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_XVYCC: hdrConfig->transfer_function = 11; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB: hdrConfig->transfer_function = 13; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB: hdrConfig->transfer_function = 13; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ: hdrConfig->transfer_function = 16; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST428: hdrConfig->transfer_function = 17; break;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG: hdrConfig->transfer_function = 18; break;
+        default:
+            _glfwInputError(GLFW_PLATFORM_ERROR,
+                            "Wayland: Unknown transfer function %d", tf);
+            return;
+    }
+}
+
+void imageDescriptionHandleLuminances(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t min_lum, uint32_t max_lum, uint32_t reference_lum)
+{
+    _GLFWwindow* window = userData;
+    GLFWhdrconfig* hdrConfig = window->wl.hdrConfig;
+    if (!hdrConfig)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: No HDR config available for window");
+        return;
+    }
+
+    float surface_min_luminance = (float)min_lum / WAYLAND_MIN_LUMINANCE_FACTOR;
+    float surface_max_luminance = (float)max_lum;
+    float surface_reference_luminance = (float)reference_lum;
+
+    printf("Wayland: Surface min luminance: %f, Max luminance: %f, Reference luminance: %f\n", surface_min_luminance, surface_max_luminance, surface_reference_luminance);
+}
+
+void imageDescriptionHandleTargetPrimaries(void *userData, struct wp_image_description_info_v1 *image_description_info, int32_t r_x, int32_t r_y, int32_t g_x, int32_t g_y, int32_t b_x, int32_t b_y, int32_t w_x, int32_t w_y)
+{
+    _GLFWwindow* window = userData;
+    GLFWhdrconfig* hdrConfig = window->wl.hdrConfig;
+    if (!hdrConfig)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: No HDR config available for window");
+        return;
+    }
+
+    hdrConfig->output_display_primary_red_x = (float)r_x / WAYLAND_COLOR_FACTOR;
+    hdrConfig->output_display_primary_red_y = (float)r_y / WAYLAND_COLOR_FACTOR;
+    hdrConfig->output_display_primary_green_x = (float)g_x / WAYLAND_COLOR_FACTOR;
+    hdrConfig->output_display_primary_green_y = (float)g_y / WAYLAND_COLOR_FACTOR;
+    hdrConfig->output_display_primary_blue_x = (float)b_x / WAYLAND_COLOR_FACTOR;
+    hdrConfig->output_display_primary_blue_y = (float)b_y / WAYLAND_COLOR_FACTOR;
+    hdrConfig->output_white_point_x = (float)w_x / WAYLAND_COLOR_FACTOR;
+    hdrConfig->output_white_point_y = (float)w_y / WAYLAND_COLOR_FACTOR;
+
+    printf("Wayland: Target primaries set to R(%f, %f), G(%f, %f), B(%f, %f), W(%f, %f)\n",
+           hdrConfig->output_display_primary_red_x, hdrConfig->output_display_primary_red_y,
+           hdrConfig->output_display_primary_green_x, hdrConfig->output_display_primary_green_y,
+           hdrConfig->output_display_primary_blue_x, hdrConfig->output_display_primary_blue_y,
+           hdrConfig->output_white_point_x, hdrConfig->output_white_point_y);
+}
+
+void imageDescriptionHandleTargetLuminances(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t min_lum, uint32_t max_lum)
+{
+    _GLFWwindow* window = userData;
+    GLFWhdrconfig* hdrConfig = window->wl.hdrConfig;
+    if (!hdrConfig)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: No HDR config available for window");
+        return;
+    }
+
+    hdrConfig->min_luminance = (float)min_lum / WAYLAND_MIN_LUMINANCE_FACTOR;
+    hdrConfig->max_luminance = (float)max_lum;
+
+    printf("Wayland: Target min luminance: %f, Max luminance: %f\n", hdrConfig->min_luminance, hdrConfig->max_luminance);
+}
+
+void imageDescriptionHandleTargetMaxCll(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t max_cll)
+{
+    printf("Wayland: Max CLL: %d\n", max_cll);
+}
+
+void imageDescriptionHandleTargetMaxFall(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t max_fall)
+{
+    _GLFWwindow* window = userData;
+    GLFWhdrconfig* hdrConfig = window->wl.hdrConfig;
+    if (!hdrConfig)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: No HDR config available for window");
+        return;
+    }
+
+    hdrConfig->max_full_frame_luminance = (float)max_fall;
+    printf("Wayland: Max FALL: %d\n", max_fall);
+}
+
+const struct wp_image_description_info_v1_listener imageDescriptionListener = {
+    imageDescriptionHandleDone,
+    imageDescriptionHandleIccFile,
+    imageDescriptionHandlePrimaries,
+    imageDescriptionHandlePrimariesNamed,
+    imageDescriptionHandlePower,
+    imageDescriptionHandleTransferFunctionNamed,
+    imageDescriptionHandleLuminances,
+    imageDescriptionHandleTargetPrimaries,
+    imageDescriptionHandleTargetLuminances,
+    imageDescriptionHandleTargetMaxCll,
+    imageDescriptionHandleTargetMaxFall,
+};
+
+void getPreferredImageDescription(_GLFWwindow* window)
+{
+    struct wp_image_description_v1* preferred;
+    // Strangely, Hyprland does not support getting the preferred surface feedback in forced parametric mode, even
+    // if the parametric creator mode is enabled.
+    // if (_glfw.wl.colorManagerSupport.parametric)
+    //     preferred = wp_color_management_surface_feedback_v1_get_preferred_parametric(window->wl.colorSurfaceFeedback);
+    // else
+    preferred = wp_color_management_surface_feedback_v1_get_preferred(window->wl.colorSurfaceFeedback);
+
+    if (!preferred) {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: Color management surface feedback received without preferred image description");
+        return;
+    }
+
+    struct wp_image_description_info_v1 *preferredInfo = wp_image_description_v1_get_information(preferred);
+    wp_image_description_v1_destroy(preferred);
+    if (!preferredInfo) {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: Color management surface feedback received with preferred image description without information");
+        return;
+    }
+
+    window->wl.hdrConfig = _glfw_realloc(window->wl.hdrConfig, sizeof(GLFWhdrconfig));
+
+    wp_image_description_info_v1_add_listener(preferredInfo, &imageDescriptionListener, window);
+}
+
+void colorFeedbackListenerHandleFeedback(void *userData, struct wp_color_management_surface_feedback_v1* feedback, uint32_t identity) {
+    getPreferredImageDescription(userData);
+}
+
+const struct wp_color_management_surface_feedback_v1_listener colorFeedbackListener =
+{
+    colorFeedbackListenerHandleFeedback,
 };
 
 static void xdgToplevelHandleConfigure(void* userData,
@@ -1070,6 +1316,70 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
                                                 &fractionalScaleListener,
                                                 window);
         }
+    }
+
+    window->wl.colorSurface = NULL;
+    window->wl.colorSurfaceFeedback = NULL;
+    window->wl.hdrConfig = NULL;
+
+    enum wp_color_manager_v1_primaries primaries = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
+    
+    // TODO: we should be using EXR_SRGB here (mirrors sRGB about 0), but it turns out that some compositors (e.g. Hyprland) do not support it.
+    enum wp_color_manager_v1_transfer_function tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
+    enum wp_color_manager_v1_render_intent intent = -1;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (_glfw.wl.colorManagerSupport.intents[i])
+        {
+            intent = i;
+            break;
+        }
+    }
+
+    GLFWbool supportsHdr = _glfw.wl.colorManager &&
+                          _glfw.wl.colorManagerSupport.parametric &&
+                          _glfw.wl.colorManagerSupport.primaries[primaries] &&
+                          _glfw.wl.colorManagerSupport.tfs[tf] &&
+                          intent != -1;
+
+    // HDR / color management config
+    if (supportsHdr) {
+        // Set up color surface & get its preferred image description (populated GLFWhdrconfig)
+        {
+            window->wl.colorSurface = wp_color_manager_v1_get_surface(_glfw.wl.colorManager, window->wl.surface);
+            window->wl.colorSurfaceFeedback = wp_color_manager_v1_get_surface_feedback(_glfw.wl.colorManager, window->wl.surface);
+            if (window->wl.colorSurfaceFeedback) {
+                wp_color_management_surface_feedback_v1_add_listener(window->wl.colorSurfaceFeedback, &colorFeedbackListener, window);
+            }
+
+            getPreferredImageDescription(window);
+
+            wl_display_roundtrip(_glfw.wl.display);
+        }
+        
+        // Configure the color surface to take scRGB (sRGB primaries & linear transfer) from us
+        struct wp_image_description_creator_params_v1* creator = wp_color_manager_v1_create_parametric_creator(_glfw.wl.colorManager);
+        if (!creator)
+        {
+            _glfwInputError(GLFW_PLATFORM_ERROR, "Wayland: Failed to create color management creator");
+            return GLFW_FALSE;
+        }
+
+        wp_image_description_creator_params_v1_set_primaries_named(creator, primaries);
+        wp_image_description_creator_params_v1_set_tf_named(creator, tf);
+
+        struct wp_image_description_v1* image_description = wp_image_description_creator_params_v1_create(creator);
+
+        if (!image_description)
+        {
+            _glfwInputError(GLFW_PLATFORM_ERROR, "Wayland: Failed to create image description");
+            wp_image_description_creator_params_v1_destroy(creator);
+            return GLFW_FALSE;
+        }
+
+        wp_color_management_surface_v1_set_image_description(window->wl.colorSurface, image_description, intent);
+
+        wp_image_description_v1_destroy(image_description);
     }
 
     return GLFW_TRUE;
@@ -2192,6 +2502,12 @@ void _glfwDestroyWindowWayland(_GLFWwindow* window)
     if (window->wl.fractionalScale)
         wp_fractional_scale_v1_destroy(window->wl.fractionalScale);
 
+    if (window->wl.colorSurfaceFeedback)
+        wp_color_management_surface_feedback_v1_destroy(window->wl.colorSurfaceFeedback);
+
+    if (window->wl.colorSurface)
+        wp_color_management_surface_v1_destroy(window->wl.colorSurface);
+
     if (window->wl.scalingViewport)
         wp_viewport_destroy(window->wl.scalingViewport);
 
@@ -2258,6 +2574,11 @@ void _glfwSetWindowPosWayland(_GLFWwindow* window, int xpos, int ypos)
 
     _glfwInputError(GLFW_FEATURE_UNAVAILABLE,
                     "Wayland: The platform does not support setting the window position");
+}
+
+GLFWhdrconfig* _glfwGetHDRConfigWayland(_GLFWwindow* window)
+{
+    return window->wl.hdrConfig;
 }
 
 void _glfwGetWindowSizeWayland(_GLFWwindow* window, int* width, int* height)

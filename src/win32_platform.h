@@ -489,6 +489,7 @@ void _glfwSetWindowTitleWin32(_GLFWwindow* window, const char* title);
 void _glfwSetWindowIconWin32(_GLFWwindow* window, int count, const GLFWimage* images);
 void _glfwGetWindowPosWin32(_GLFWwindow* window, int* xpos, int* ypos);
 void _glfwSetWindowPosWin32(_GLFWwindow* window, int xpos, int ypos);
+GLFWhdrconfig* _glfwGetHDRConfigWin32(_GLFWwindow* window);
 void _glfwGetWindowSizeWin32(_GLFWwindow* window, int* width, int* height);
 void _glfwSetWindowSizeWin32(_GLFWwindow* window, int width, int height);
 void _glfwSetWindowSizeLimitsWin32(_GLFWwindow* window, int minwidth, int minheight, int maxwidth, int maxheight);

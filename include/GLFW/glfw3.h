@@ -2080,6 +2080,33 @@ typedef struct GLFWgammaramp
     unsigned int size;
 } GLFWgammaramp;
 
+ /*! @brief HDR config.
+  *
+  *  This describes the display properties.
+  *
+  *  @sa @ref glfwGetHDRConfig
+  *
+  *  @since Added in version 3.5.
+  *
+  *  @ingroup window
+  */
+typedef struct GLFWhdrconfig {
+    uint32_t primaries;
+    uint32_t transfer_function;
+    float output_display_primary_red_x;
+    float output_display_primary_red_y;
+    float output_display_primary_green_x;
+    float output_display_primary_green_y;
+    float output_display_primary_blue_x;
+    float output_display_primary_blue_y;
+    float output_white_point_x;
+    float output_white_point_y;
+    float max_luminance;
+    float min_luminance;
+    float max_full_frame_luminance;
+    float sdr_white_level;
+} GLFWhdrconfig;
+
 /*! @brief Image data.
  *
  *  This describes a single 2D image.  See the documentation for each related
@@ -3485,6 +3512,28 @@ GLFWAPI void glfwGetWindowPos(GLFWwindow* window, int* xpos, int* ypos);
  *  @ingroup window
  */
 GLFWAPI void glfwSetWindowPos(GLFWwindow* window, int xpos, int ypos);
+
+/*! @brief Retrieves the HDR configuration of the specified window.
+ *
+ *  This function retrieves the HDR configuration of the specified window.  If
+ *  the window does not support HDR, this function returns `NULL`.
+ *
+ *  @param[in] window The window to query.
+ *  @return The HDR configuration of the window, or `NULL` if it does not
+ *  support HDR or an [error](@ref error_handling) occurred.
+ *
+ *  @errors Possible errors include @ref GLFW_NOT_INITIALIZED and @ref
+ *  GLFW_PLATFORM_ERROR.
+ *
+ *  @thread_safety This function must only be called from the main thread.
+ *
+ *  @sa @ref window_hdr
+ *
+ *  @since Added in version 3.4.
+ *
+ *  @ingroup window
+ */
+GLFWAPI const GLFWhdrconfig* glfwGetHDRConfig(GLFWwindow* window);
 
 /*! @brief Retrieves the size of the content area of the specified window.
  *

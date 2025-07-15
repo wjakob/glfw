@@ -26,6 +26,7 @@
 //========================================================================
 
 #include "internal.h"
+#include "color-management-v1-client-protocol.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -196,6 +197,10 @@ static GLFWbool chooseEGLConfig(const _GLFWctxconfig* ctxconfig,
 
         u->samples = getEGLConfigAttrib(n, EGL_SAMPLES);
         u->doublebuffer = fbconfig->doublebuffer;
+        u->floatbuffer = (u->redBits == 0 || u->redBits >= 16) &&
+                        (u->greenBits == 0 || u->greenBits >= 16) &&
+                        (u->blueBits == 0 || u->blueBits >= 16) &&
+                        (u->alphaBits == 0 || u->alphaBits >= 16);
 
         u->handle = (uintptr_t) n;
         usableCount++;

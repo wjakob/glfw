@@ -1063,6 +1063,11 @@ void _glfwSetWindowPosCocoa(_GLFWwindow* window, int x, int y)
     } // autoreleasepool
 }
 
+GLFWhdrconfig* _glfwGetHDRConfigCocoa(_GLFWwindow* window)
+{
+    return NULL; // Cocoa does not support HDR via GLFW. Use Metal APIs directly.
+}
+
 void _glfwGetWindowSizeCocoa(_GLFWwindow* window, int* width, int* height)
 {
     @autoreleasepool {
