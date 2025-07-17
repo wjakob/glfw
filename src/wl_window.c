@@ -787,6 +787,7 @@ void getPreferredImageDescription(_GLFWwindow* window)
     }
 
     window->wl.hdrConfig = _glfw_realloc(window->wl.hdrConfig, sizeof(GLFWhdrconfig));
+    memset(window->wl.hdrConfig, 0, sizeof(GLFWhdrconfig));
 
     wp_image_description_info_v1_add_listener(preferredInfo, &imageDescriptionListener, window);
 }
