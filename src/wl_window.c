@@ -571,7 +571,6 @@ void imageDescriptionHandleIccFile(void *userData, struct wp_image_description_i
 
 void imageDescriptionHandlePrimaries(void *userData, struct wp_image_description_info_v1 *image_description_info, int32_t r_x, int32_t r_y, int32_t g_x, int32_t g_y, int32_t b_x, int32_t b_y, int32_t w_x, int32_t w_y)
 {
-    printf("Wayland: Primaries support is not implemented yet.\n");
     _GLFWwindow* window = userData;
     GLFWhdrconfig* hdrConfig = window->wl.hdrConfig;
     if (!hdrConfig)
@@ -590,7 +589,7 @@ void imageDescriptionHandlePrimaries(void *userData, struct wp_image_description
     float surface_white_point_x = (float)w_x / WAYLAND_COLOR_FACTOR;
     float surface_white_point_y = (float)w_y / WAYLAND_COLOR_FACTOR;
 
-    printf("Wayland: Surface primaries set to R(%f, %f), G(%f, %f), B(%f, %f), W(%f, %f)\n",
+    printf("Wayland: Surface primaries: R(%f, %f), G(%f, %f), B(%f, %f), W(%f, %f)\n",
           surface_primary_red_x, surface_primary_red_y,
           surface_primary_green_x, surface_primary_green_y,
           surface_primary_blue_x, surface_primary_blue_y,
@@ -630,7 +629,7 @@ void imageDescriptionHandlePrimariesNamed(void *userData, struct wp_image_descri
 
 void imageDescriptionHandlePower(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t eexp)
 {
-    printf("Wayland: Tf power set to %d.\n", eexp);
+    printf("Wayland: tfPower: %d.\n", eexp);
 }
 
 void imageDescriptionHandleTransferFunctionNamed(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t tf)
@@ -705,7 +704,7 @@ void imageDescriptionHandleTargetPrimaries(void *userData, struct wp_image_descr
     hdrConfig->output_white_point_x = (float)w_x / WAYLAND_COLOR_FACTOR;
     hdrConfig->output_white_point_y = (float)w_y / WAYLAND_COLOR_FACTOR;
 
-    printf("Wayland: Target primaries set to R(%f, %f), G(%f, %f), B(%f, %f), W(%f, %f)\n",
+    printf("Wayland: Target primaries: R(%f, %f), G(%f, %f), B(%f, %f), W(%f, %f)\n",
            hdrConfig->output_display_primary_red_x, hdrConfig->output_display_primary_red_y,
            hdrConfig->output_display_primary_green_x, hdrConfig->output_display_primary_green_y,
            hdrConfig->output_display_primary_blue_x, hdrConfig->output_display_primary_blue_y,
@@ -1324,9 +1323,14 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
 
     enum wp_color_manager_v1_primaries primaries = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
     
-    // TODO: we should be using EXR_SRGB here (mirrors sRGB about 0), but it turns out that some compositors (e.g. Hyprland) do not support it.
     enum wp_color_manager_v1_transfer_function tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
-    enum wp_color_manager_v1_render_intent intent = -1;
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
+    {
+        // Use the extended sRGB transfer function if available
+        tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB;
+    }
+
+    enum wp_color_manager_v1_render_intent intent = WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL;
     for (int i = 0; i < 4; ++i)
     {
         if (_glfw.wl.colorManagerSupport.intents[i])
@@ -1340,9 +1344,15 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
                           _glfw.wl.colorManagerSupport.parametric &&
                           _glfw.wl.colorManagerSupport.primaries[primaries] &&
                           _glfw.wl.colorManagerSupport.tfs[tf] &&
-                          intent != -1;
+                          _glfw.wl.colorManagerSupport.intents[intent];
 
-    // HDR / color management config
+    if (fbconfig->floatbuffer && !supportsHdr)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: Float buffers are not supported without HDR support");
+        return GLFW_FALSE;
+    }
+
     if (supportsHdr) {
         // Set up color surface & get its preferred image description (populated GLFWhdrconfig)
         {
