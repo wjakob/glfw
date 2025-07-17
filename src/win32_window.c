@@ -1651,7 +1651,7 @@ void _glfwSetWindowPosWin32(_GLFWwindow* window, int xpos, int ypos)
                  SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
 }
 
-float GetDisplayWhitePoint() {
+float _glfwGetWindowSdrWhiteLevel(_GLFWwindow* window) {
     UINT32 numPaths, numModes;
     LONG result;
 
@@ -1679,7 +1679,7 @@ float GetDisplayWhitePoint() {
         return FALSE;
     }
 
-    // Find the first active path
+    // Find the first active path TODO: find path for the current window
     for (UINT32 i = 0; i < numPaths; i++) {
         if (paths[i].flags & DISPLAYCONFIG_PATH_ACTIVE) {
             DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceName;
@@ -1715,59 +1715,6 @@ float GetDisplayWhitePoint() {
 
     memset(0, 0, 0);
     return 80.0f; // sRGB standard white level
-}
-
-GLFWhdrconfig* _glfwGetHDRConfigWin32(_GLFWwindow* window)
-{
-    IDXGIFactory6* factory = NULL;
-    IDXGIAdapter4* adapter = NULL;
-    IDXGIOutput6* output = NULL;
-    DXGI_OUTPUT_DESC1 desc;
-
-    GLFWhdrconfig* config = NULL;
-
-    HRESULT hr = CreateDXGIFactory2(0, &IID_IDXGIFactory6, (void**)&factory);
-    if (SUCCEEDED(hr))
-    {
-        // TODO: loop instead of hardcoding 0
-        hr = factory->lpVtbl->EnumAdapters(factory, 0, (IDXGIAdapter**)&adapter);
-        if (SUCCEEDED(hr))
-        {
-            hr = adapter->lpVtbl->EnumOutputs(adapter, 0, (IDXGIOutput**)&output);
-            if (SUCCEEDED(hr))
-            {
-                hr = output->lpVtbl->GetDesc1(output, &desc);
-                if (SUCCEEDED(hr))
-                {
-                    config = _glfw_calloc(sizeof(GLFWhdrconfig));
-
-                    // Surface colorspace is scRGB, i.e. sRGB primaries with linear transfer
-                    // See https://learn.microsoft.com/en-us/windows/win32/direct3darticles/high-dynamic-range
-                    config->primaries = 1; // sRGB H.273
-                    config->transfer_function = 8; // linear H.273
-                    
-                    config->output_display_primary_red_x = desc.RedPrimary[0];
-                    config->output_display_primary_red_y = desc.RedPrimary[1];
-                    config->output_display_primary_green_x = desc.GreenPrimary[0];
-                    config->output_display_primary_green_y = desc.GreenPrimary[1];
-                    config->output_display_primary_blue_x = desc.BluePrimary[0];
-                    config->output_display_primary_blue_y = desc.BluePrimary[1];
-                    config->output_white_point_x = desc.WhitePoint[0];
-                    config->output_white_point_y = desc.WhitePoint[1];
-                    config->max_luminance = desc.MaxLuminance;
-                    config->min_luminance = desc.MinLuminance;
-                    config->max_full_frame_luminance = desc.MaxFullFrameLuminance;
-                    config->sdr_white_level = GetDisplayWhitePoint();
-                }
-            }
-        }
-    }
-
-    if (output) output->lpVtbl->Release(output);
-    if (adapter) adapter->lpVtbl->Release(adapter);
-    if (factory) factory->lpVtbl->Release(factory);
-
-    return config;
 }
 
 void _glfwGetWindowSizeWin32(_GLFWwindow* window, int* width, int* height)

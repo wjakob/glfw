@@ -1063,9 +1063,10 @@ void _glfwSetWindowPosCocoa(_GLFWwindow* window, int x, int y)
     } // autoreleasepool
 }
 
-GLFWhdrconfig* _glfwGetHDRConfigCocoa(_GLFWwindow* window)
+float _glfwGetWindowSdrWhiteLevelCocoa(_GLFWwindow* window)
 {
-    return NULL; // Cocoa does not support HDR via GLFW. Use Metal APIs directly.
+    // On Cocoa, we'll render via metal configured to the sRGB color space, which'll give us a white level of 80 nits.
+    return 80.0f;
 }
 
 void _glfwGetWindowSizeCocoa(_GLFWwindow* window, int* width, int* height)

@@ -2190,9 +2190,9 @@ void _glfwSetWindowPosX11(_GLFWwindow* window, int xpos, int ypos)
     XFlush(_glfw.x11.display);
 }
 
-GLFWhdrconfig* _glfwGetHDRConfigX11(_GLFWwindow* window)
+float _glfwGetWindowSdrWhiteLevelX11(_GLFWwindow* window)
 {
-    return NULL; // X11 does not support HDR
+    return 80.0f;
 }
 
 void _glfwGetWindowSizeX11(_GLFWwindow* window, int* width, int* height)

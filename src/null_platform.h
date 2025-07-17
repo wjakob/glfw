@@ -226,7 +226,6 @@ void _glfwSetWindowIconNull(_GLFWwindow* window, int count, const GLFWimage* ima
 void _glfwSetWindowMonitorNull(_GLFWwindow* window, _GLFWmonitor* monitor, int xpos, int ypos, int width, int height, int refreshRate);
 void _glfwGetWindowPosNull(_GLFWwindow* window, int* xpos, int* ypos);
 void _glfwSetWindowPosNull(_GLFWwindow* window, int xpos, int ypos);
-GLFWhdrconfig* _glfwGetHDRConfigNull(_GLFWwindow* window);
 void _glfwGetWindowSizeNull(_GLFWwindow* window, int* width, int* height);
 void _glfwSetWindowSizeNull(_GLFWwindow* window, int width, int height);
 void _glfwSetWindowSizeLimitsNull(_GLFWwindow* window, int minwidth, int minheight, int maxwidth, int maxheight);
@@ -234,6 +233,7 @@ void _glfwSetWindowAspectRatioNull(_GLFWwindow* window, int n, int d);
 void _glfwGetFramebufferSizeNull(_GLFWwindow* window, int* width, int* height);
 void _glfwGetWindowFrameSizeNull(_GLFWwindow* window, int* left, int* top, int* right, int* bottom);
 void _glfwGetWindowContentScaleNull(_GLFWwindow* window, float* xscale, float* yscale);
+float _glfwGetWindowSdrWhiteLevelNull(_GLFWwindow* window);
 void _glfwIconifyWindowNull(_GLFWwindow* window);
 void _glfwRestoreWindowNull(_GLFWwindow* window);
 void _glfwMaximizeWindowNull(_GLFWwindow* window);

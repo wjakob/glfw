@@ -385,8 +385,6 @@ typedef struct _GLFWwindowWayland
         struct libdecor_frame*  frame;
     } libdecor;
 
-    GLFWhdrconfig*              hdrConfig;
-
     _GLFWcursor*                currentCursor;
     double                      cursorPosX, cursorPosY;
 
@@ -641,7 +639,6 @@ void _glfwSetWindowTitleWayland(_GLFWwindow* window, const char* title);
 void _glfwSetWindowIconWayland(_GLFWwindow* window, int count, const GLFWimage* images);
 void _glfwGetWindowPosWayland(_GLFWwindow* window, int* xpos, int* ypos);
 void _glfwSetWindowPosWayland(_GLFWwindow* window, int xpos, int ypos);
-GLFWhdrconfig* _glfwGetHDRConfigWayland(_GLFWwindow* window);
 void _glfwGetWindowSizeWayland(_GLFWwindow* window, int* width, int* height);
 void _glfwSetWindowSizeWayland(_GLFWwindow* window, int width, int height);
 void _glfwSetWindowSizeLimitsWayland(_GLFWwindow* window, int minwidth, int minheight, int maxwidth, int maxheight);
@@ -649,6 +646,7 @@ void _glfwSetWindowAspectRatioWayland(_GLFWwindow* window, int numer, int denom)
 void _glfwGetFramebufferSizeWayland(_GLFWwindow* window, int* width, int* height);
 void _glfwGetWindowFrameSizeWayland(_GLFWwindow* window, int* left, int* top, int* right, int* bottom);
 void _glfwGetWindowContentScaleWayland(_GLFWwindow* window, float* xscale, float* yscale);
+float _glfwGetWindowSdrWhiteLevelWayland(_GLFWwindow* window);
 void _glfwIconifyWindowWayland(_GLFWwindow* window);
 void _glfwRestoreWindowWayland(_GLFWwindow* window);
 void _glfwMaximizeWindowWayland(_GLFWwindow* window);

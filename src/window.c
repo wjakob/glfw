@@ -612,14 +612,14 @@ GLFWAPI void glfwSetWindowPos(GLFWwindow* handle, int xpos, int ypos)
     _glfw.platform.setWindowPos(window, xpos, ypos);
 }
 
-GLFWAPI const GLFWhdrconfig* glfwGetHDRConfig(GLFWwindow* handle)
+GLFWAPI float glfwGetWindowSdrWhiteLevel(GLFWwindow* handle)
 {
-    _GLFW_REQUIRE_INIT_OR_RETURN(NULL);
+    _GLFW_REQUIRE_INIT_OR_RETURN(0.f);
 
     _GLFWwindow* window = (_GLFWwindow*) handle;
     assert(window != NULL);
 
-    return _glfw.platform.getHDRConfig(window);
+    return _glfw.platform.getWindowSdrWhiteLevel(window);
 }
 
 GLFWAPI void glfwGetWindowSize(GLFWwindow* handle, int* width, int* height)
