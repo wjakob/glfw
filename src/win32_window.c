@@ -1651,24 +1651,33 @@ void _glfwSetWindowPosWin32(_GLFWwindow* window, int xpos, int ypos)
                  SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
 }
 
-float _glfwGetWindowSdrWhiteLevel(_GLFWwindow* window) {
+float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
     UINT32 numPaths, numModes;
     LONG result;
+
+    const TCHAR* monitorName = NULL;
+
+    HMONITOR hMonitor = MonitorFromWindow(window->win32.handle, MONITOR_DEFAULTTONEAREST);
+    MONITORINFOEX monitorInfo;
+    monitorInfo.cbSize = sizeof(MONITORINFOEX);
+    if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+        monitorName = monitorInfo.szDevice;
+    }
 
     // Get the number of paths and modes
     result = GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &numPaths, &numModes);
     if (result != ERROR_SUCCESS) {
-        return FALSE;
+        return 80.0f;
     }
 
     // Allocate memory for the paths and modes
-    DISPLAYCONFIG_PATH_INFO* paths = _glfw_calloc(numPaths * sizeof(DISPLAYCONFIG_PATH_INFO));
-    DISPLAYCONFIG_MODE_INFO* modes = _glfw_calloc(numModes * sizeof(DISPLAYCONFIG_MODE_INFO));
+    DISPLAYCONFIG_PATH_INFO* paths = _glfw_calloc(numPaths, sizeof(DISPLAYCONFIG_PATH_INFO));
+    DISPLAYCONFIG_MODE_INFO* modes = _glfw_calloc(numModes, sizeof(DISPLAYCONFIG_MODE_INFO));
 
     if (!paths || !modes) {
         _glfw_free(paths);
         _glfw_free(modes);
-        return FALSE;
+        return 80.0f;
     }
 
     // Query the display configuration
@@ -1676,38 +1685,49 @@ float _glfwGetWindowSdrWhiteLevel(_GLFWwindow* window) {
     if (result != ERROR_SUCCESS) {
         _glfw_free(paths);
         _glfw_free(modes);
-        return FALSE;
+        return 80.0f;
     }
 
     // Find the first active path TODO: find path for the current window
     for (UINT32 i = 0; i < numPaths; i++) {
-        if (paths[i].flags & DISPLAYCONFIG_PATH_ACTIVE) {
-            DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceName;
-            sourceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
-            sourceName.header.size = sizeof(DISPLAYCONFIG_SOURCE_DEVICE_NAME);
-            sourceName.header.adapterId = paths[i].sourceInfo.adapterId;
-            sourceName.header.id = paths[i].sourceInfo.id;
-
-            result = DisplayConfigGetDeviceInfo(&sourceName.header);
-            if (result == ERROR_SUCCESS) {
-                DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO advanced_color_info = {};
-                advanced_color_info.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO;
-                advanced_color_info.header.size = sizeof(advanced_color_info);
-                advanced_color_info.header.adapterId = paths[i].targetInfo.adapterId;
-                advanced_color_info.header.id = paths[i].targetInfo.id;
-                result = DisplayConfigGetDeviceInfo(&advanced_color_info.header);
-
-                if (result == ERROR_SUCCESS && advanced_color_info.advancedColorEnabled > 0) {
-                    DISPLAYCONFIG_SDR_WHITE_LEVEL white_level = {};
-                    white_level.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SDR_WHITE_LEVEL;
-                    white_level.header.size = sizeof(white_level);
-                    white_level.header.adapterId = paths[i].targetInfo.adapterId;
-                    white_level.header.id = paths[i].targetInfo.id;
-                    if (DisplayConfigGetDeviceInfo(&white_level.header) == ERROR_SUCCESS)
-                        return white_level.SDRWhiteLevel;  // From wingdi.h.
-                }
-            }
+        if (!(paths[i].flags & DISPLAYCONFIG_PATH_ACTIVE)) {
+            continue;
         }
+
+        DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceName;
+        sourceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+        sourceName.header.size = sizeof(DISPLAYCONFIG_SOURCE_DEVICE_NAME);
+        sourceName.header.adapterId = paths[i].sourceInfo.adapterId;
+        sourceName.header.id = paths[i].sourceInfo.id;
+
+        result = DisplayConfigGetDeviceInfo(&sourceName.header);
+
+        // If we have a monitor name, only check for sdr white level on the monitor that it matches
+        if (result != ERROR_SUCCESS || (monitorName && wcscmp(sourceName.viewGdiDeviceName, monitorName) != 0)) {
+            continue;
+        }
+
+        DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO advanced_color_info = {};
+        advanced_color_info.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO;
+        advanced_color_info.header.size = sizeof(advanced_color_info);
+        advanced_color_info.header.adapterId = paths[i].targetInfo.adapterId;
+        advanced_color_info.header.id = paths[i].targetInfo.id;
+        result = DisplayConfigGetDeviceInfo(&advanced_color_info.header);
+
+        if (result != ERROR_SUCCESS || advanced_color_info.advancedColorEnabled == 0) {
+            continue;
+        }
+
+        DISPLAYCONFIG_SDR_WHITE_LEVEL white_level = {};
+        white_level.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SDR_WHITE_LEVEL;
+        white_level.header.size = sizeof(white_level);
+        white_level.header.adapterId = paths[i].targetInfo.adapterId;
+        white_level.header.id = paths[i].targetInfo.id;
+        if (DisplayConfigGetDeviceInfo(&white_level.header) != ERROR_SUCCESS) {
+            continue;
+        }
+
+        return white_level.SDRWhiteLevel / 1000.0f * 80.0f;
     }
 
     _glfw_free(paths);
