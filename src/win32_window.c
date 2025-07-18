@@ -1695,6 +1695,7 @@ float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
         }
 
         DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceName;
+        memset(&sourceName, 0, sizeof(sourceName));
         sourceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
         sourceName.header.size = sizeof(DISPLAYCONFIG_SOURCE_DEVICE_NAME);
         sourceName.header.adapterId = paths[i].sourceInfo.adapterId;
@@ -1707,27 +1708,29 @@ float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
             continue;
         }
 
-        DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO advanced_color_info = {};
-        advanced_color_info.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO;
-        advanced_color_info.header.size = sizeof(advanced_color_info);
-        advanced_color_info.header.adapterId = paths[i].targetInfo.adapterId;
-        advanced_color_info.header.id = paths[i].targetInfo.id;
-        result = DisplayConfigGetDeviceInfo(&advanced_color_info.header);
+        DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO advancedColorInfo;
+        memset(&advancedColorInfo, 0, sizeof(advancedColorInfo));
+        advancedColorInfo.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO;
+        advancedColorInfo.header.size = sizeof(advancedColorInfo);
+        advancedColorInfo.header.adapterId = paths[i].targetInfo.adapterId;
+        advancedColorInfo.header.id = paths[i].targetInfo.id;
+        result = DisplayConfigGetDeviceInfo(&advancedColorInfo.header);
 
-        if (result != ERROR_SUCCESS || advanced_color_info.advancedColorEnabled == 0) {
+        if (result != ERROR_SUCCESS || advancedColorInfo.advancedColorEnabled == 0) {
             continue;
         }
 
-        DISPLAYCONFIG_SDR_WHITE_LEVEL white_level = {};
-        white_level.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SDR_WHITE_LEVEL;
-        white_level.header.size = sizeof(white_level);
-        white_level.header.adapterId = paths[i].targetInfo.adapterId;
-        white_level.header.id = paths[i].targetInfo.id;
-        if (DisplayConfigGetDeviceInfo(&white_level.header) != ERROR_SUCCESS) {
+        DISPLAYCONFIG_SDR_WHITE_LEVEL whiteLevel;
+        memset(&whiteLevel, 0, sizeof(whiteLevel));
+        whiteLevel.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SDR_WHITE_LEVEL;
+        whiteLevel.header.size = sizeof(whiteLevel);
+        whiteLevel.header.adapterId = paths[i].targetInfo.adapterId;
+        whiteLevel.header.id = paths[i].targetInfo.id;
+        if (DisplayConfigGetDeviceInfo(&whiteLevel.header) != ERROR_SUCCESS) {
             continue;
         }
 
-        return white_level.SDRWhiteLevel / 1000.0f * 80.0f;
+        return whiteLevel.SDRWhiteLevel / 1000.0f * 80.0f;
     }
 
     _glfw_free(paths);
