@@ -1225,7 +1225,7 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
     }
 
     enum wp_color_manager_v1_render_intent intent = WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL;
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 5; ++i)
     {
         if (_glfw.wl.colorManagerSupport.intents[i])
         {
