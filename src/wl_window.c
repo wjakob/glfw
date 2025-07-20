@@ -2483,20 +2483,20 @@ float _glfwGetWindowSdrWhiteLevelWayland(_GLFWwindow* window)
 
 uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
 {
-    enum wp_color_manager_v1_primaries primaries = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
     if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_BT2020])
-        primaries = WP_COLOR_MANAGER_V1_PRIMARIES_BT2020;
-    return primaries;
+        return WP_COLOR_MANAGER_V1_PRIMARIES_BT2020;
+    return WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
 }
 
 uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
 {
-    enum wp_color_manager_v1_transfer_function tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
-    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
-        tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB;
     if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ])
-        tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ;
-    return tf;
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ;
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG])
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG;
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB;
+    return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
 }
 
 void _glfwGetWindowSizeWayland(_GLFWwindow* window, int* width, int* height)
