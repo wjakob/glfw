@@ -722,6 +722,8 @@ struct _GLFWplatform
     void (*getWindowPos)(_GLFWwindow*,int*,int*);
     void (*setWindowPos)(_GLFWwindow*,int,int);
     float (*getWindowSdrWhiteLevel)(_GLFWwindow*);
+    uint32_t (*getWindowPrimaries)(_GLFWwindow*);
+    uint32_t (*getWindowTransfer)(_GLFWwindow*);
     void (*getWindowSize)(_GLFWwindow*,int*,int*);
     void (*setWindowSize)(_GLFWwindow*,int,int);
     void (*setWindowSizeLimits)(_GLFWwindow*,int,int,int,int);

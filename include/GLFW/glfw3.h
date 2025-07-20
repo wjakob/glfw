@@ -3740,6 +3740,8 @@ GLFWAPI void glfwGetWindowFrameSize(GLFWwindow* window, int* left, int* top, int
 GLFWAPI void glfwGetWindowContentScale(GLFWwindow* window, float* xscale, float* yscale);
 
 GLFWAPI float glfwGetWindowSdrWhiteLevel(GLFWwindow* window);
+GLFWAPI uint32_t glfwGetWindowPrimaries(GLFWwindow* window);
+GLFWAPI uint32_t glfwGetWindowTransfer(GLFWwindow* window);
 
 /*! @brief Returns the opacity of the whole window.
  *

@@ -1215,14 +1215,9 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
     window->wl.colorSurface = NULL;
     window->wl.colorSurfaceFeedback = NULL;
 
-    enum wp_color_manager_v1_primaries primaries = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
-    
-    enum wp_color_manager_v1_transfer_function tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
-    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
-    {
-        // Use the extended sRGB transfer function if available
-        tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB;
-    }
+    // These functions take into account the color management support of the compositor
+    enum wp_color_manager_v1_primaries primaries = _glfwGetWindowPrimariesWayland(window);
+    enum wp_color_manager_v1_transfer_function tf = _glfwGetWindowTransferWayland(window);
 
     enum wp_color_manager_v1_render_intent intent = WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL;
     for (int i = 0; i < 5; ++i)
@@ -2484,6 +2479,24 @@ float _glfwGetWindowSdrWhiteLevelWayland(_GLFWwindow* window)
 {
     // TODO: when enabling non-sRGB transfer functions, like EXT_LINEAR, this should return the display's white level in nits
     return 80.0f;
+}
+
+uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
+{
+    enum wp_color_manager_v1_primaries primaries = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
+    if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_BT2020])
+        primaries = WP_COLOR_MANAGER_V1_PRIMARIES_BT2020;
+    return primaries;
+}
+
+uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
+{
+    enum wp_color_manager_v1_transfer_function tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
+        tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB;
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ])
+        tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ;
+    return tf;
 }
 
 void _glfwGetWindowSizeWayland(_GLFWwindow* window, int* width, int* height)

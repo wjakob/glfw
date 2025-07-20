@@ -2195,6 +2195,16 @@ float _glfwGetWindowSdrWhiteLevelX11(_GLFWwindow* window)
     return 80.0f;
 }
 
+uint32_t _glfwGetWindowPrimariesX11(_GLFWwindow* window)
+{
+    return 1; // sRGB
+}
+
+uint32_t _glfwGetWindowTransferX11(_GLFWwindow* window)
+{
+    return 10; // EXT sRGB
+}
+
 void _glfwGetWindowSizeX11(_GLFWwindow* window, int* width, int* height)
 {
     XWindowAttributes attribs;

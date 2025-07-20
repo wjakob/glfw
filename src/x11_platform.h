@@ -917,6 +917,8 @@ void _glfwGetFramebufferSizeX11(_GLFWwindow* window, int* width, int* height);
 void _glfwGetWindowFrameSizeX11(_GLFWwindow* window, int* left, int* top, int* right, int* bottom);
 void _glfwGetWindowContentScaleX11(_GLFWwindow* window, float* xscale, float* yscale);
 float _glfwGetWindowSdrWhiteLevelX11(_GLFWwindow* window);
+uint32_t _glfwGetWindowPrimariesX11(_GLFWwindow* window);
+uint32_t _glfwGetWindowTransferX11(_GLFWwindow* window);
 void _glfwIconifyWindowX11(_GLFWwindow* window);
 void _glfwRestoreWindowX11(_GLFWwindow* window);
 void _glfwMaximizeWindowX11(_GLFWwindow* window);

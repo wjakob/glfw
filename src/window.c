@@ -622,6 +622,27 @@ GLFWAPI float glfwGetWindowSdrWhiteLevel(GLFWwindow* handle)
     return _glfw.platform.getWindowSdrWhiteLevel(window);
 }
 
+GLFWAPI uint32_t glfwGetWindowPrimaries(GLFWwindow* handle)
+{
+    _GLFW_REQUIRE_INIT_OR_RETURN(1); // sRGB
+
+    _GLFWwindow* window = (_GLFWwindow*) handle;
+    assert(window != NULL);
+
+    return _glfw.platform.getWindowPrimaries(window);
+}
+
+GLFWAPI uint32_t glfwGetWindowTransfer(GLFWwindow* handle)
+{
+    _GLFW_REQUIRE_INIT_OR_RETURN(10); // EXT sRGB
+
+    _GLFWwindow* window = (_GLFWwindow*) handle;
+    assert(window != NULL);
+
+    return _glfw.platform.getWindowTransfer(window);
+}
+
+
 GLFWAPI void glfwGetWindowSize(GLFWwindow* handle, int* width, int* height)
 {
     if (width)
