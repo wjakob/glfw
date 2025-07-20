@@ -938,6 +938,8 @@ GLFWAPI int glfwGetWindowAttrib(GLFWwindow* handle, int attrib)
             return window->mousePassthrough;
         case GLFW_TRANSPARENT_FRAMEBUFFER:
             return _glfw.platform.framebufferTransparent(window);
+        case GLFW_RED_BITS:
+            return window->bitsPerSample;
         case GLFW_RESIZABLE:
             return window->resizable;
         case GLFW_DECORATED:

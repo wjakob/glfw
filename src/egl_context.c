@@ -607,6 +607,8 @@ GLFWbool _glfwCreateContextEGL(_GLFWwindow* window,
     if (!chooseEGLConfig(ctxconfig, fbconfig, &config))
         return GLFW_FALSE;
 
+    window->bitsPerSample = getEGLConfigAttrib(config, EGL_RED_SIZE);
+
     if (ctxconfig->client == GLFW_OPENGL_ES_API)
     {
         if (!eglBindAPI(EGL_OPENGL_ES_API))

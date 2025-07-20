@@ -291,6 +291,7 @@ static int choosePixelFormatWGL(_GLFWwindow* window,
         return 0;
     }
 
+    window->bitsPerSample = closest->redBits;
     pixelFormat = (int) closest->handle;
     _glfw_free(usableConfigs);
 

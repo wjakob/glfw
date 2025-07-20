@@ -470,6 +470,8 @@ GLFWbool _glfwCreateContextGLX(_GLFWwindow* window,
         return GLFW_FALSE;
     }
 
+    window->bitsPerSample = getGLXFBConfigAttrib(native, GLX_RED_SIZE);
+
     if (ctxconfig->client == GLFW_OPENGL_ES_API)
     {
         if (!_glfw.glx.ARB_create_context ||

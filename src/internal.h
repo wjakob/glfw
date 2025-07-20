@@ -547,6 +547,7 @@ struct _GLFWwindow
     _GLFWcursor*        cursor;
     char*               title;
 
+    int                 bitsPerSample;
     int                 minwidth, minheight;
     int                 maxwidth, maxheight;
     int                 numer, denom;
