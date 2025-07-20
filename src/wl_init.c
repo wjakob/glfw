@@ -298,13 +298,16 @@ static void registryHandleGlobal(void* userData,
     }
     else if (strcmp(interface, "wp_color_manager_v1") == 0)
     {
-        _glfw.wl.colorManager =
-            wl_registry_bind(registry, name,
-                             &wp_color_manager_v1_interface,
-                             1);
+        if (_glfw.hints.init.wl.colorManagement == GLFW_TRUE)
+        {
+            _glfw.wl.colorManager =
+                wl_registry_bind(registry, name,
+                                 &wp_color_manager_v1_interface,
+                                 1);
 
-        memset(&_glfw.wl.colorManagerSupport, 0, sizeof(_glfw.wl.colorManagerSupport));
-        wp_color_manager_v1_add_listener(_glfw.wl.colorManager, &colorManagerListener, &_glfw.wl);
+            memset(&_glfw.wl.colorManagerSupport, 0, sizeof(_glfw.wl.colorManagerSupport));
+            wp_color_manager_v1_add_listener(_glfw.wl.colorManager, &colorManagerListener, &_glfw.wl);
+        }
     }
 }
 

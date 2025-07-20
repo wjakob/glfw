@@ -387,6 +387,7 @@ struct _GLFWinitconfig
     } x11;
     struct {
         int       libdecorMode;
+        GLFWbool  colorManagement;
     } wl;
 };
 

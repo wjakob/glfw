@@ -462,6 +462,10 @@ GLFWAPI void glfwInitHint(int hint, int value)
         case GLFW_WAYLAND_LIBDECOR:
             _glfwInitHints.wl.libdecorMode = value;
             return;
+        case GLFW_WAYLAND_COLOR_MANAGEMENT:
+            _glfwInitHints.wl.colorManagement = value ? GLFW_TRUE : GLFW_FALSE;
+            return;
+
     }
 
     _glfwInputError(GLFW_INVALID_ENUM,
