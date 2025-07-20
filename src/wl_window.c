@@ -1158,6 +1158,30 @@ static void destroyShellObjects(_GLFWwindow* window)
     window->wl.xdg.surface = NULL;
 }
 
+static GLFWbool supportsColorManagement(_GLFWwindow* window)
+{
+    if (!_glfw.wl.colorManager)
+        return GLFW_FALSE;
+
+    if (!_glfw.wl.colorManagerSupport.parametric)
+        return GLFW_FALSE;
+
+    if (!_glfw.wl.colorManagerSupport.intents[WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL])
+        return GLFW_FALSE;
+
+    if (!_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_SRGB] &&
+        !_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_BT2020])
+        return GLFW_FALSE;
+
+    if (!_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB] &&
+        !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ] &&
+        !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG] &&
+        !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
+        return GLFW_FALSE;
+
+    return GLFW_TRUE;
+}
+
 static GLFWbool createNativeSurface(_GLFWwindow* window,
                                     const _GLFWwndconfig* wndconfig,
                                     const _GLFWfbconfig* fbconfig)
@@ -1229,20 +1253,17 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
         }
     }
 
-    GLFWbool supportsHdr = _glfw.wl.colorManager &&
-                          _glfw.wl.colorManagerSupport.parametric &&
-                          _glfw.wl.colorManagerSupport.primaries[primaries] &&
-                          _glfw.wl.colorManagerSupport.tfs[tf] &&
-                          _glfw.wl.colorManagerSupport.intents[intent];
+    GLFWbool supportsCm = supportsColorManagement(window);
 
-    if (fbconfig->floatbuffer && !supportsHdr)
+    if (fbconfig->floatbuffer && !supportsCm)
     {
         _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Wayland: Float buffers are not supported without HDR support");
+                        "Wayland: Float buffers are not supported without color management support");
         return GLFW_FALSE;
     }
 
-    if (supportsHdr) {
+    if (supportsCm)
+    {
         // Set up color surface & get its preferred image description (currently nothing is done with the preferred image description)
         {
             window->wl.colorSurface = wp_color_manager_v1_get_surface(_glfw.wl.colorManager, window->wl.surface);
@@ -2483,6 +2504,9 @@ float _glfwGetWindowSdrWhiteLevelWayland(_GLFWwindow* window)
 
 uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
 {
+    if (!supportsColorManagement(window))
+        return WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
+
     if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_BT2020])
         return WP_COLOR_MANAGER_V1_PRIMARIES_BT2020;
     return WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
@@ -2490,6 +2514,9 @@ uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
 
 uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
 {
+    if (!supportsColorManagement(window))
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
+
     if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ])
         return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ;
     if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG])
