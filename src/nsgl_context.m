@@ -257,6 +257,8 @@ GLFWbool _glfwCreateContextNSGL(_GLFWwindow* window,
         SET_ATTRIB(NSOpenGLPFAColorSize, colorBits);
     }
 
+    window->bitsPerSample = fbconfig->redBits;
+
     if (fbconfig->alphaBits != GLFW_DONT_CARE)
         SET_ATTRIB(NSOpenGLPFAAlphaSize, fbconfig->alphaBits);
 
