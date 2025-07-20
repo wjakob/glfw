@@ -1740,6 +1740,16 @@ float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
     return 80.0f; // sRGB standard white level
 }
 
+uint32_t _glfwGetWindowPrimariesWin32(_GLFWwindow* window)
+{
+    return 1; // sRGB
+}
+
+uint32_t _glfwGetWindowTransferWin32(_GLFWwindow* window)
+{
+    return 5; // linear
+}
+
 void _glfwGetWindowSizeWin32(_GLFWwindow* window, int* width, int* height)
 {
     RECT area;

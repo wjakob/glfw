@@ -247,6 +247,16 @@ float _glfwGetWindowSdrWhiteLevelNull(_GLFWwindow* window)
     return 80.0f;
 }
 
+uint32_t _glfwGetWindowPrimariesNull(_GLFWwindow* window)
+{
+    return 1; // sRGB
+}
+
+uint32_t _glfwGetWindowTransferNull(_GLFWwindow* window)
+{
+    return 10; // EXT sRGB
+}
+
 void _glfwGetWindowSizeNull(_GLFWwindow* window, int* width, int* height)
 {
     if (width)
