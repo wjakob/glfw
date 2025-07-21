@@ -1652,6 +1652,15 @@ void _glfwSetWindowPosWin32(_GLFWwindow* window, int xpos, int ypos)
 }
 
 float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
+    if (window->bitsPerSample != 16) {
+        // If we don't have a fp16 frame buffer, Windows does not expect scRGB
+        // with proper SDR white level scaling, it instead expects standard
+        // sRGB whose reference white level should be 80 nits. (Even though the
+        // screen's reference white level -- obtained by the bottom code --
+        // might be different. In that case Windows does the remapping for us.)
+        return 80.0f;
+    }
+
     UINT32 numPaths, numModes;
     LONG result;
 
