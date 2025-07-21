@@ -243,8 +243,9 @@ static GLFWbool chooseEGLConfig(const _GLFWctxconfig* ctxconfig,
         }
         else
         {
-            _glfwInputError(GLFW_FORMAT_UNAVAILABLE,
-                            "EGL: Failed to find a suitable EGLConfig");
+            // No need for this error message -- the user can simply try again.
+            // _glfwInputError(GLFW_FORMAT_UNAVAILABLE,
+            //                 "EGL: Failed to find a suitable EGLConfig");
         }
     }
 
