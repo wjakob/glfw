@@ -1747,7 +1747,9 @@ uint32_t _glfwGetWindowPrimariesWin32(_GLFWwindow* window)
 
 uint32_t _glfwGetWindowTransferWin32(_GLFWwindow* window)
 {
-    return 5; // linear
+    // If we managed to get a fp16 frame buffer on Windows, we need to output scRGB
+    // i.e. linear colors w/ sRGB primaries.
+    return window->bitsPerSample == 16 ? 5 : 10; // 5 == linear, 10 == EXT sRGB
 }
 
 void _glfwGetWindowSizeWin32(_GLFWwindow* window, int* width, int* height)
