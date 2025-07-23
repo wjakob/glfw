@@ -649,6 +649,7 @@ void _glfwGetWindowContentScaleWayland(_GLFWwindow* window, float* xscale, float
 float _glfwGetWindowSdrWhiteLevelWayland(_GLFWwindow* window);
 uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window);
 uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window);
+uint32_t _glfwGetWindowRenderingIntentWayland(_GLFWwindow* window);
 void _glfwIconifyWindowWayland(_GLFWwindow* window);
 void _glfwRestoreWindowWayland(_GLFWwindow* window);
 void _glfwMaximizeWindowWayland(_GLFWwindow* window);
