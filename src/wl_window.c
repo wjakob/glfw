@@ -627,6 +627,8 @@ void imageDescriptionHandleTransferFunctionNamed(void *userData, struct wp_image
 
 void imageDescriptionHandleLuminances(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t min_lum, uint32_t max_lum, uint32_t reference_lum)
 {
+    _GLFWwindow* window = userData;
+    window->sdrWhiteLevel = reference_lum;
 }
 
 void imageDescriptionHandleTargetPrimaries(void *userData, struct wp_image_description_info_v1 *image_description_info, int32_t r_x, int32_t r_y, int32_t g_x, int32_t g_y, int32_t b_x, int32_t b_y, int32_t w_x, int32_t w_y)
@@ -2489,7 +2491,8 @@ void _glfwSetWindowPosWayland(_GLFWwindow* window, int xpos, int ypos)
 
 float _glfwGetWindowSdrWhiteLevelWayland(_GLFWwindow* window)
 {
-    // TODO: when enabling non-sRGB transfer functions, like EXT_LINEAR, this should return the display's white level in nits
+    if (window->sdrWhiteLevel != 0.0f)
+        return window->sdrWhiteLevel;
     return 80.0f;
 }
 

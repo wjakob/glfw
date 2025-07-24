@@ -548,6 +548,7 @@ struct _GLFWwindow
     _GLFWcursor*        cursor;
     char*               title;
 
+    float               sdrWhiteLevel;
     int                 bitsPerSample;
     int                 minwidth, minheight;
     int                 maxwidth, maxheight;
