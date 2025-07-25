@@ -232,6 +232,8 @@ void _glfwGetFramebufferSizeCocoa(_GLFWwindow* window, int* width, int* height);
 void _glfwGetWindowFrameSizeCocoa(_GLFWwindow* window, int* left, int* top, int* right, int* bottom);
 void _glfwGetWindowContentScaleCocoa(_GLFWwindow* window, float* xscale, float* yscale);
 float _glfwGetWindowSdrWhiteLevelCocoa(_GLFWwindow* window);
+float _glfwGetWindowMinLuminanceCocoa(_GLFWwindow* window);
+float _glfwGetWindowMaxLuminanceCocoa(_GLFWwindow* window);
 uint32_t _glfwGetWindowPrimariesCocoa(_GLFWwindow* window);
 uint32_t _glfwGetWindowTransferCocoa(_GLFWwindow* window);
 void _glfwIconifyWindowCocoa(_GLFWwindow* window);

@@ -1749,6 +1749,14 @@ float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
     return 80.0f; // sRGB standard white level
 }
 
+float _glfwGetWindowMinLuminanceWin32(_GLFWwindow* window) {
+    return 0.0f;
+}
+
+float _glfwGetWindowMaxLuminanceWin32(_GLFWwindow* window) {
+    return 0.0f;
+}
+
 uint32_t _glfwGetWindowPrimariesWin32(_GLFWwindow* window)
 {
     return 1; // sRGB

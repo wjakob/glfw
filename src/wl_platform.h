@@ -376,6 +376,9 @@ typedef struct _GLFWwindowWayland
     GLFWbool                    fullscreen;
     GLFWbool                    transparent;
     GLFWbool                    scaleFramebuffer;
+    float                       sdrWhiteLevel;
+    float                       minLuminance;
+    float                       maxLuminance;
     struct wl_surface*          surface;
 
     struct {
@@ -687,6 +690,8 @@ void _glfwGetFramebufferSizeWayland(_GLFWwindow* window, int* width, int* height
 void _glfwGetWindowFrameSizeWayland(_GLFWwindow* window, int* left, int* top, int* right, int* bottom);
 void _glfwGetWindowContentScaleWayland(_GLFWwindow* window, float* xscale, float* yscale);
 float _glfwGetWindowSdrWhiteLevelWayland(_GLFWwindow* window);
+float _glfwGetWindowMinLuminanceWayland(_GLFWwindow* window);
+float _glfwGetWindowMaxLuminanceWayland(_GLFWwindow* window);
 uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window);
 uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window);
 uint32_t _glfwGetWindowRenderingIntentWayland(_GLFWwindow* window);
