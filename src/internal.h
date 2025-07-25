@@ -548,7 +548,6 @@ struct _GLFWwindow
     _GLFWcursor*        cursor;
     char*               title;
 
-    float               sdrWhiteLevel;
     int                 bitsPerSample;
     int                 minwidth, minheight;
     int                 maxwidth, maxheight;
@@ -725,6 +724,8 @@ struct _GLFWplatform
     void (*getWindowPos)(_GLFWwindow*,int*,int*);
     void (*setWindowPos)(_GLFWwindow*,int,int);
     float (*getWindowSdrWhiteLevel)(_GLFWwindow*);
+    float (*getWindowMinLuminance)(_GLFWwindow*);
+    float (*getWindowMaxLuminance)(_GLFWwindow*);
     uint32_t (*getWindowPrimaries)(_GLFWwindow*);
     uint32_t (*getWindowTransfer)(_GLFWwindow*);
     void (*getWindowSize)(_GLFWwindow*,int*,int*);

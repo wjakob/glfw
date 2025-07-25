@@ -588,6 +588,8 @@ GLFWbool _glfwConnectWayland(int platformID, _GLFWplatform* platform)
         .getWindowFrameSize = _glfwGetWindowFrameSizeWayland,
         .getWindowContentScale = _glfwGetWindowContentScaleWayland,
         .getWindowSdrWhiteLevel = _glfwGetWindowSdrWhiteLevelWayland,
+        .getWindowMinLuminance = _glfwGetWindowMinLuminanceWayland,
+        .getWindowMaxLuminance = _glfwGetWindowMaxLuminanceWayland,
         .getWindowPrimaries = _glfwGetWindowPrimariesWayland,
         .getWindowTransfer = _glfwGetWindowTransferWayland,
         .iconifyWindow = _glfwIconifyWindowWayland,

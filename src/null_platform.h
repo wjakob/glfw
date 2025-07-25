@@ -234,6 +234,8 @@ void _glfwGetFramebufferSizeNull(_GLFWwindow* window, int* width, int* height);
 void _glfwGetWindowFrameSizeNull(_GLFWwindow* window, int* left, int* top, int* right, int* bottom);
 void _glfwGetWindowContentScaleNull(_GLFWwindow* window, float* xscale, float* yscale);
 float _glfwGetWindowSdrWhiteLevelNull(_GLFWwindow* window);
+float _glfwGetWindowMinLuminanceNull(_GLFWwindow* window);
+float _glfwGetWindowMaxLuminanceNull(_GLFWwindow* window);
 uint32_t _glfwGetWindowPrimariesNull(_GLFWwindow* window);
 uint32_t _glfwGetWindowTransferNull(_GLFWwindow* window);
 void _glfwIconifyWindowNull(_GLFWwindow* window);

@@ -627,8 +627,11 @@ void imageDescriptionHandleTransferFunctionNamed(void *userData, struct wp_image
 
 void imageDescriptionHandleLuminances(void *userData, struct wp_image_description_info_v1 *image_description_info, uint32_t min_lum, uint32_t max_lum, uint32_t reference_lum)
 {
+    // printf("Wayland: min_lum=%d, max_lum=%d, reference_lum=%d\n", min_lum, max_lum, reference_lum);
     _GLFWwindow* window = userData;
-    window->sdrWhiteLevel = reference_lum;
+    window->wl.sdrWhiteLevel = reference_lum;
+    window->wl.minLuminance = (float)min_lum / WAYLAND_MIN_LUMINANCE_FACTOR;
+    window->wl.maxLuminance = (float)max_lum;
 }
 
 void imageDescriptionHandleTargetPrimaries(void *userData, struct wp_image_description_info_v1 *image_description_info, int32_t r_x, int32_t r_y, int32_t g_x, int32_t g_y, int32_t b_x, int32_t b_y, int32_t w_x, int32_t w_y)
@@ -2491,9 +2494,19 @@ void _glfwSetWindowPosWayland(_GLFWwindow* window, int xpos, int ypos)
 
 float _glfwGetWindowSdrWhiteLevelWayland(_GLFWwindow* window)
 {
-    if (window->sdrWhiteLevel != 0.0f)
-        return window->sdrWhiteLevel;
+    if (window->wl.sdrWhiteLevel != 0.0f)
+        return window->wl.sdrWhiteLevel;
     return 80.0f;
+}
+
+float _glfwGetWindowMinLuminanceWayland(_GLFWwindow* window)
+{
+    return window->wl.minLuminance;
+}
+
+float _glfwGetWindowMaxLuminanceWayland(_GLFWwindow* window)
+{
+    return window->wl.maxLuminance;
 }
 
 uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)

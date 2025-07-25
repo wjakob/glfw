@@ -622,6 +622,26 @@ GLFWAPI float glfwGetWindowSdrWhiteLevel(GLFWwindow* handle)
     return _glfw.platform.getWindowSdrWhiteLevel(window);
 }
 
+GLFWAPI float glfwGetWindowMinLuminance(GLFWwindow* handle)
+{
+    _GLFW_REQUIRE_INIT_OR_RETURN(0.f);
+
+    _GLFWwindow* window = (_GLFWwindow*) handle;
+    assert(window != NULL);
+
+    return _glfw.platform.getWindowMinLuminance(window);
+}
+
+GLFWAPI float glfwGetWindowMaxLuminance(GLFWwindow* handle)
+{
+    _GLFW_REQUIRE_INIT_OR_RETURN(0.f);
+
+    _GLFWwindow* window = (_GLFWwindow*) handle;
+    assert(window != NULL);
+
+    return _glfw.platform.getWindowMaxLuminance(window);
+}
+
 GLFWAPI uint32_t glfwGetWindowPrimaries(GLFWwindow* handle)
 {
     _GLFW_REQUIRE_INIT_OR_RETURN(1); // sRGB

@@ -553,6 +553,8 @@ GLFWbool _glfwConnectCocoa(int platformID, _GLFWplatform* platform)
         .getWindowFrameSize = _glfwGetWindowFrameSizeCocoa,
         .getWindowContentScale = _glfwGetWindowContentScaleCocoa,
         .getWindowSdrWhiteLevel = _glfwGetWindowSdrWhiteLevelCocoa,
+        .getWindowMinLuminance = _glfwGetWindowMinLuminanceCocoa,
+        .getWindowMaxLuminance = _glfwGetWindowMaxLuminanceCocoa,
         .getWindowPrimaries = _glfwGetWindowPrimariesCocoa,
         .getWindowTransfer = _glfwGetWindowTransferCocoa,
         .iconifyWindow = _glfwIconifyWindowCocoa,

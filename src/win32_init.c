@@ -641,6 +641,8 @@ GLFWbool _glfwConnectWin32(int platformID, _GLFWplatform* platform)
         .getWindowFrameSize = _glfwGetWindowFrameSizeWin32,
         .getWindowContentScale = _glfwGetWindowContentScaleWin32,
         .getWindowSdrWhiteLevel = _glfwGetWindowSdrWhiteLevelWin32,
+        .getWindowMinLuminance = _glfwGetWindowMinLuminanceWin32,
+        .getWindowMaxLuminance = _glfwGetWindowMaxLuminanceWin32,
         .getWindowPrimaries = _glfwGetWindowPrimariesWin32,
         .getWindowTransfer = _glfwGetWindowTransferWin32,
         .iconifyWindow = _glfwIconifyWindowWin32,

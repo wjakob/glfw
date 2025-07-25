@@ -1069,6 +1069,16 @@ float _glfwGetWindowSdrWhiteLevelCocoa(_GLFWwindow* window)
     return 80.0f;
 }
 
+float _glfwGetWindowMinLuminanceCocoa(_GLFWwindow* window)
+{
+    return 0.0f;
+}
+
+float _glfwGetWindowMaxLuminanceCocoa(_GLFWwindow* window)
+{
+    return 0.0f;
+}
+
 uint32_t _glfwGetWindowPrimariesCocoa(_GLFWwindow* window)
 {
     return 1; // sRGB
