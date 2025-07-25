@@ -1251,13 +1251,6 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
 
     GLFWbool supportsCm = supportsColorManagement(window);
 
-    if (fbconfig->floatbuffer && !supportsCm)
-    {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Wayland: Float buffers are not supported without color management support");
-        return GLFW_FALSE;
-    }
-
     if (supportsCm)
     {
         // Set up color surface & get its preferred image description (currently nothing is done with the preferred image description)
