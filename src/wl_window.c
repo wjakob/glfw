@@ -559,6 +559,46 @@ const struct wp_fractional_scale_v1_listener fractionalScaleListener =
 #define WAYLAND_COLOR_FACTOR 1000000
 #define WAYLAND_MIN_LUMINANCE_FACTOR 10000
 
+static GLFWbool updateColorManagedSurface(_GLFWwindow* window)
+{
+    // These functions take into account the color management support of the compositor
+    enum wp_color_manager_v1_primaries primaries = _glfwGetWindowPrimariesWayland(window);
+    enum wp_color_manager_v1_transfer_function tf = _glfwGetWindowTransferWayland(window);
+    enum wp_color_manager_v1_render_intent intent = _glfwGetWindowRenderingIntentWayland(window);
+
+    struct wp_image_description_creator_params_v1* creator = wp_color_manager_v1_create_parametric_creator(_glfw.wl.colorManager);
+    if (!creator)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR, "Wayland: Failed to create color management creator");
+        return GLFW_FALSE;
+    }
+
+    wp_image_description_creator_params_v1_set_primaries_named(creator, primaries);
+    wp_image_description_creator_params_v1_set_tf_named(creator, tf);
+
+    if (_glfw.wl.colorManagerSupport.setLuminance && (window->wl.sdrWhiteLevel != 0.0f || window->wl.minLuminance != 0.0f || window->wl.maxLuminance != 0.0f))
+    {
+        wp_image_description_creator_params_v1_set_luminances(creator,
+                                                              (uint32_t)(window->wl.minLuminance * WAYLAND_MIN_LUMINANCE_FACTOR),
+                                                              (uint32_t)window->wl.maxLuminance,
+                                                              (uint32_t)window->wl.sdrWhiteLevel);
+    }
+
+    struct wp_image_description_v1* image_description = wp_image_description_creator_params_v1_create(creator);
+
+    if (!image_description)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR, "Wayland: Failed to create image description");
+        wp_image_description_creator_params_v1_destroy(creator);
+        return GLFW_FALSE;
+    }
+
+    wp_color_management_surface_v1_set_image_description(window->wl.colorSurface, image_description, intent);
+
+    wp_image_description_v1_destroy(image_description);
+    return GLFW_TRUE;
+}
+
 void imageDescriptionHandleDone(void *userData, struct wp_image_description_info_v1 *image_description_info)
 {
     wp_image_description_info_v1_destroy(image_description_info);
@@ -632,6 +672,8 @@ void imageDescriptionHandleLuminances(void *userData, struct wp_image_descriptio
     window->wl.sdrWhiteLevel = reference_lum;
     window->wl.minLuminance = (float)min_lum / WAYLAND_MIN_LUMINANCE_FACTOR;
     window->wl.maxLuminance = (float)max_lum;
+
+    updateColorManagedSurface(window);
 }
 
 void imageDescriptionHandleTargetPrimaries(void *userData, struct wp_image_description_info_v1 *image_description_info, int32_t r_x, int32_t r_y, int32_t g_x, int32_t g_y, int32_t b_x, int32_t b_y, int32_t w_x, int32_t w_y)
@@ -1244,11 +1286,6 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
     window->wl.colorSurface = NULL;
     window->wl.colorSurfaceFeedback = NULL;
 
-    // These functions take into account the color management support of the compositor
-    enum wp_color_manager_v1_primaries primaries = _glfwGetWindowPrimariesWayland(window);
-    enum wp_color_manager_v1_transfer_function tf = _glfwGetWindowTransferWayland(window);
-    enum wp_color_manager_v1_render_intent intent = _glfwGetWindowRenderingIntentWayland(window);
-
     GLFWbool supportsCm = supportsColorManagement(window);
 
     if (supportsCm)
@@ -1265,30 +1302,10 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
 
             wl_display_roundtrip(_glfw.wl.display);
         }
-        
-        // Configure the color surface to take scRGB (sRGB primaries & linear transfer) from us
-        struct wp_image_description_creator_params_v1* creator = wp_color_manager_v1_create_parametric_creator(_glfw.wl.colorManager);
-        if (!creator)
-        {
-            _glfwInputError(GLFW_PLATFORM_ERROR, "Wayland: Failed to create color management creator");
+
+        if (!updateColorManagedSurface(window)) {
             return GLFW_FALSE;
         }
-
-        wp_image_description_creator_params_v1_set_primaries_named(creator, primaries);
-        wp_image_description_creator_params_v1_set_tf_named(creator, tf);
-
-        struct wp_image_description_v1* image_description = wp_image_description_creator_params_v1_create(creator);
-
-        if (!image_description)
-        {
-            _glfwInputError(GLFW_PLATFORM_ERROR, "Wayland: Failed to create image description");
-            wp_image_description_creator_params_v1_destroy(creator);
-            return GLFW_FALSE;
-        }
-
-        wp_color_management_surface_v1_set_image_description(window->wl.colorSurface, image_description, intent);
-
-        wp_image_description_v1_destroy(image_description);
     }
 
     return GLFW_TRUE;
