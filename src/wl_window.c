@@ -2546,24 +2546,20 @@ uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
 uint32_t _glfwGetWindowRenderingIntentWayland(_GLFWwindow* window)
 {
     if (!supportsColorManagement(window))
-        return WP_COLOR_MANAGER_V1_RENDER_INTENT_ABSOLUTE;
+        return WP_COLOR_MANAGER_V1_RENDER_INTENT_RELATIVE;
 
-    // Our goal is to be as colorimetrically accurate as possible. The absolute
-    // rendering intent preserves colors exactly (including white point) at the
-    // cost of gamut clipping. If that's not available, we fall back to the
-    // relative intent which rescales colors to the nearest white point in the
-    // display's gamut, at the cost of some color accuracy. Lastly, the
-    // perceptual intent is our fallback when neither absolute nor relative are
-    // available, as it is guaranteed to be supported when color management is
-    // supported. the perceptual intent may lead to the most pleasing image in
-    // terms of smooth color transitions, but that's at the cost of color
-    // accuracy / saturation.
-    if (_glfw.wl.colorManagerSupport.intents[WP_COLOR_MANAGER_V1_RENDER_INTENT_ABSOLUTE])
-        return WP_COLOR_MANAGER_V1_RENDER_INTENT_ABSOLUTE;
+    // Our goal is to be as colorimetrically accurate as possible without
+    // falsifying how the image was intended to be displayed. The relative
+    // rendering intent preserves colors exactly while adapting to the white
+    // point of the display's gamut. Lastly, the perceptual intent is our
+    // fallback when relative colorimetric isn't available, as it is guaranteed
+    // to be supported when color management is supported. the perceptual
+    // intent may lead to the most pleasing image in terms of smooth color
+    // transitions, but that's at the cost of color accuracy / saturation.
     if (_glfw.wl.colorManagerSupport.intents[WP_COLOR_MANAGER_V1_RENDER_INTENT_RELATIVE])
         return WP_COLOR_MANAGER_V1_RENDER_INTENT_RELATIVE;
 
-     // Perceptual is guaranteed to be supported when color management is supported
+    // Perceptual is guaranteed to be supported when color management is supported
     return WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL;
 }
 
