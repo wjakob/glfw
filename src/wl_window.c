@@ -1539,7 +1539,7 @@ static void handleEvents(double* timeout)
 
 // Reads the specified data offer as the specified MIME type
 //
-static char* readDataOfferAsString(struct wl_data_offer* offer, const char* mimeType)
+static char* readDataOffer(struct wl_data_offer* offer, const char* mimeType, size_t* length)
 {
     int fds[2];
 
@@ -1555,17 +1555,18 @@ static char* readDataOfferAsString(struct wl_data_offer* offer, const char* mime
     flushDisplay();
     close(fds[1]);
 
-    char* string = NULL;
+    char* data = NULL;
     size_t size = 0;
-    size_t length = 0;
+    *length = 0;
+
+    size_t readSize = 4096;
 
     for (;;)
     {
-        const size_t readSize = 4096;
-        const size_t requiredSize = length + readSize + 1;
+        const size_t requiredSize = *length + readSize + 1;
         if (requiredSize > size)
         {
-            char* longer = _glfw_realloc(string, requiredSize);
+            char* longer = _glfw_realloc(data, requiredSize);
             if (!longer)
             {
                 _glfwInputError(GLFW_OUT_OF_MEMORY, NULL);
@@ -1573,11 +1574,11 @@ static char* readDataOfferAsString(struct wl_data_offer* offer, const char* mime
                 return NULL;
             }
 
-            string = longer;
+            data = longer;
             size = requiredSize;
         }
 
-        const ssize_t result = read(fds[0], string + length, readSize);
+        const ssize_t result = read(fds[0], data + *length, readSize);
         if (result == 0)
             break;
         else if (result == -1)
@@ -1592,13 +1593,14 @@ static char* readDataOfferAsString(struct wl_data_offer* offer, const char* mime
             return NULL;
         }
 
-        length += result;
+        *length += result;
+        readSize *= 2;
     }
 
     close(fds[0]);
+    data[*length] = '\0'; // Null-terminate in case we hold a string
 
-    string[length] = '\0';
-    return string;
+    return data;
 }
 
 static void pointerHandleEnter(void* userData,
@@ -2276,7 +2278,8 @@ static void dataDeviceHandleDrop(void* userData,
     if (!_glfw.wl.dragOffer)
         return;
 
-    char* string = readDataOfferAsString(_glfw.wl.dragOffer, "text/uri-list");
+    size_t length;
+    char* string = readDataOffer(_glfw.wl.dragOffer, "text/uri-list", &length);
     if (string)
     {
         int count;
@@ -2309,10 +2312,10 @@ static void dataDeviceHandleSelection(void* userData,
     {
         if (_glfw.wl.offers[i].offer == offer)
         {
-            if (_glfw.wl.offers[i].text_plain_utf8)
+            // if (_glfw.wl.offers[i].text_plain_utf8)
                 _glfw.wl.selectionOffer = offer;
-            else
-                wl_data_offer_destroy(offer);
+            // else
+            //     wl_data_offer_destroy(offer);
 
             _glfw.wl.offers[i] = _glfw.wl.offers[_glfw.wl.offerCount - 1];
             _glfw.wl.offerCount--;
@@ -3402,15 +3405,18 @@ static void dataSourceHandleSend(void* userData,
                                  int fd)
 {
     // Ignore it if this is an outdated or invalid request
-    if (_glfw.wl.selectionSource != source ||
-        strcmp(mimeType, "text/plain;charset=utf-8") != 0)
+    if (
+        _glfw.wl.selectionSource != source
+        // || strcmp(mimeType, "text/plain;charset=utf-8") != 0
+    )
     {
+        printf("Wayland: Ignoring clipboard send request for mime type '%s'\n", mimeType);
         close(fd);
         return;
     }
 
     char* string = _glfw.wl.clipboardString;
-    size_t length = strlen(string);
+    size_t length = _glfw.wl.clipboardLength;
 
     while (length > 0)
     {
@@ -3453,55 +3459,13 @@ static const struct wl_data_source_listener dataSourceListener =
 
 void _glfwSetClipboardStringWayland(const char* string)
 {
-    if (_glfw.wl.selectionSource)
-    {
-        wl_data_source_destroy(_glfw.wl.selectionSource);
-        _glfw.wl.selectionSource = NULL;
-    }
-
-    char* copy = _glfw_strdup(string);
-    if (!copy)
-    {
-        _glfwInputError(GLFW_OUT_OF_MEMORY, NULL);
-        return;
-    }
-
-    _glfw_free(_glfw.wl.clipboardString);
-    _glfw.wl.clipboardString = copy;
-
-    _glfw.wl.selectionSource =
-        wl_data_device_manager_create_data_source(_glfw.wl.dataDeviceManager);
-    if (!_glfw.wl.selectionSource)
-    {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Wayland: Failed to create clipboard data source");
-        return;
-    }
-    wl_data_source_add_listener(_glfw.wl.selectionSource,
-                                &dataSourceListener,
-                                NULL);
-    wl_data_source_offer(_glfw.wl.selectionSource, "text/plain;charset=utf-8");
-    wl_data_device_set_selection(_glfw.wl.dataDevice,
-                                 _glfw.wl.selectionSource,
-                                 _glfw.wl.serial);
+    glfwSetWaylandClipboardData(string, "text/plain;charset=utf-8", strlen(string) + 1);
 }
 
 const char* _glfwGetClipboardStringWayland(void)
 {
-    if (!_glfw.wl.selectionOffer)
-    {
-        _glfwInputError(GLFW_FORMAT_UNAVAILABLE,
-                        "Wayland: No clipboard data available");
-        return NULL;
-    }
-
-    if (_glfw.wl.selectionSource)
-        return _glfw.wl.clipboardString;
-
-    _glfw_free(_glfw.wl.clipboardString);
-    _glfw.wl.clipboardString =
-        readDataOfferAsString(_glfw.wl.selectionOffer, "text/plain;charset=utf-8");
-    return _glfw.wl.clipboardString;
+    size_t tmp;
+    return glfwGetWaylandClipboardData("text/plain;charset=utf-8", &tmp);
 }
 
 EGLenum _glfwGetEGLPlatformWayland(EGLint** attribs)
@@ -3619,6 +3583,64 @@ GLFWAPI struct wl_surface* glfwGetWaylandWindow(GLFWwindow* handle)
     assert(window != NULL);
 
     return window->wl.surface;
+}
+
+GLFWAPI void glfwSetWaylandClipboardData(const char* data, const char* type, size_t length) {
+    if (_glfw.wl.selectionSource)
+    {
+        wl_data_source_destroy(_glfw.wl.selectionSource);
+        _glfw.wl.selectionSource = NULL;
+    }
+
+    char* copy = _glfw_calloc(length, 1);
+    memcpy(copy, data, length);
+    if (!copy)
+    {
+        _glfwInputError(GLFW_OUT_OF_MEMORY, NULL);
+        return;
+    }
+
+    _glfw_free(_glfw.wl.clipboardString);
+    _glfw.wl.clipboardString = copy;
+    _glfw.wl.clipboardLength = length;
+
+    _glfw.wl.selectionSource =
+        wl_data_device_manager_create_data_source(_glfw.wl.dataDeviceManager);
+    if (!_glfw.wl.selectionSource)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Wayland: Failed to create clipboard data source");
+        return;
+    }
+    wl_data_source_add_listener(_glfw.wl.selectionSource,
+                                &dataSourceListener,
+                                NULL);
+    wl_data_source_offer(_glfw.wl.selectionSource, type);
+    wl_data_device_set_selection(_glfw.wl.dataDevice,
+                                 _glfw.wl.selectionSource,
+                                 _glfw.wl.serial);
+
+}
+
+GLFWAPI const char* glfwGetWaylandClipboardData(const char* type, size_t* length) {
+    if (_glfw.wl.selectionSource) {
+        *length = _glfw.wl.clipboardLength;
+        return _glfw.wl.clipboardString;
+    }
+
+    if (!_glfw.wl.selectionOffer)
+    {
+        _glfwInputError(GLFW_FORMAT_UNAVAILABLE,
+                        "Wayland: No clipboard data available");
+        *length = 0;
+        return NULL;
+    }
+
+    _glfw_free(_glfw.wl.clipboardString);
+    _glfw.wl.clipboardString = readDataOffer(_glfw.wl.selectionOffer, type, &_glfw.wl.clipboardLength);
+
+    *length = _glfw.wl.clipboardLength;
+    return _glfw.wl.clipboardString;
 }
 
 #endif // _GLFW_WAYLAND

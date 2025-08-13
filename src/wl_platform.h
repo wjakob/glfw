@@ -486,6 +486,8 @@ typedef struct _GLFWlibraryWayland
     int                         keyRepeatScancode;
 
     char*                       clipboardString;
+    size_t                      clipboardLength;
+
     short int                   keycodes[256];
     short int                   scancodes[GLFW_KEY_LAST + 1];
     char                        keynames[GLFW_KEY_LAST + 1][5];

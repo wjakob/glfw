@@ -548,6 +548,10 @@ GLFWAPI struct wl_output* glfwGetWaylandMonitor(GLFWmonitor* monitor);
  *  @ingroup native
  */
 GLFWAPI struct wl_surface* glfwGetWaylandWindow(GLFWwindow* window);
+
+GLFWAPI void glfwSetWaylandClipboardData(const char* data, const char* type, size_t length);
+
+GLFWAPI const char* glfwGetWaylandClipboardData(const char* type, size_t* length);
 #endif
 
 #if defined(GLFW_EXPOSE_NATIVE_EGL)
