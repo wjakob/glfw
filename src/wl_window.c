@@ -1769,7 +1769,7 @@ static char* readDataOffer(struct wl_data_offer* offer, const char* mimeType, si
         }
 
         *length += result;
-        readSize *= 2;
+        // readSize *= 2;
     }
 
     close(fds[0]);
