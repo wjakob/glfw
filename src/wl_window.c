@@ -1559,14 +1559,17 @@ static char* readDataOffer(struct wl_data_offer* offer, const char* mimeType, si
     size_t size = 0;
     *length = 0;
 
-    size_t readSize = 4096;
+    const size_t readSize = 1024 * 64;
+    size_t allocSize = readSize;
 
     for (;;)
     {
         const size_t requiredSize = *length + readSize + 1;
         if (requiredSize > size)
         {
-            char* longer = _glfw_realloc(data, requiredSize);
+            const size_t newSize = *length + allocSize + 1;
+
+            char* longer = _glfw_realloc(data, newSize);
             if (!longer)
             {
                 _glfwInputError(GLFW_OUT_OF_MEMORY, NULL);
@@ -1575,7 +1578,8 @@ static char* readDataOffer(struct wl_data_offer* offer, const char* mimeType, si
             }
 
             data = longer;
-            size = requiredSize;
+            size = newSize;
+            allocSize *= 2;
         }
 
         const ssize_t result = read(fds[0], data + *length, readSize);
@@ -1594,7 +1598,6 @@ static char* readDataOffer(struct wl_data_offer* offer, const char* mimeType, si
         }
 
         *length += result;
-        // readSize *= 2;
     }
 
     close(fds[0]);
