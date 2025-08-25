@@ -80,13 +80,21 @@ typedef struct _GLFWjoystick    _GLFWjoystick;
 typedef struct _GLFWtls         _GLFWtls;
 typedef struct _GLFWmutex       _GLFWmutex;
 
-#define GL_VERSION 0x1f02
+#if !defined(GL_VERSION)
+#  define GL_VERSION 0x1f02
+#endif
 #define GL_NONE 0
 #define GL_COLOR_BUFFER_BIT 0x00004000
 #define GL_UNSIGNED_BYTE 0x1401
-#define GL_EXTENSIONS 0x1f03
-#define GL_NUM_EXTENSIONS 0x821d
-#define GL_CONTEXT_FLAGS 0x821e
+#if !defined(GL_EXTENSIONS)
+#  define GL_EXTENSIONS 0x1f03
+#endif
+#if !defined(GL_NUM_EXTENSIONS)
+#  define GL_NUM_EXTENSIONS 0x821d
+#endif
+#if !defined(GL_CONTEXT_FLAGS)
+#  define GL_CONTEXT_FLAGS 0x821e
+#endif
 #define GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT 0x00000001
 #define GL_CONTEXT_FLAG_DEBUG_BIT 0x00000002
 #define GL_CONTEXT_PROFILE_MASK 0x9126
@@ -95,8 +103,12 @@ typedef struct _GLFWmutex       _GLFWmutex;
 #define GL_RESET_NOTIFICATION_STRATEGY_ARB 0x8256
 #define GL_LOSE_CONTEXT_ON_RESET_ARB 0x8252
 #define GL_NO_RESET_NOTIFICATION_ARB 0x8261
-#define GL_CONTEXT_RELEASE_BEHAVIOR 0x82fb
-#define GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH 0x82fc
+#if !defined (GL_CONTEXT_RELEASE_BEHAVIOR)
+#  define GL_CONTEXT_RELEASE_BEHAVIOR 0x82fb
+#endif
+#if !defined(GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH)
+#  define GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH 0x82fc
+#endif
 #define GL_CONTEXT_FLAG_NO_ERROR_BIT_KHR 0x00000008
 
 typedef int GLint;
