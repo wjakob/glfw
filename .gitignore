@@ -101,4 +101,5 @@ tests/title
 tests/triangle-vulkan
 tests/window
 tests/windows
-
+src/*-protocol.h
+src/*-protocol-code.h
