@@ -1669,7 +1669,7 @@ float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
     HMONITOR hMonitor = MonitorFromWindow(window->win32.handle, MONITOR_DEFAULTTONEAREST);
     MONITORINFOEX monitorInfo;
     monitorInfo.cbSize = sizeof(MONITORINFOEX);
-    if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+    if (GetMonitorInfo(hMonitor, (LPMONITORINFO)&monitorInfo)) {
         monitorName = monitorInfo.szDevice;
     }
 
