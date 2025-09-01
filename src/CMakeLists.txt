@@ -121,15 +121,22 @@ else()
 endif()
 set(GLFW_LIB_NAME_SUFFIX "")
 
-set_target_properties(glfw PROPERTIES
-                      OUTPUT_NAME ${GLFW_LIB_NAME}
-                      VERSION ${GLFW_VERSION_MAJOR}.${GLFW_VERSION_MINOR}
-                      SOVERSION ${GLFW_VERSION_MAJOR}
-                      POSITION_INDEPENDENT_CODE ON
-                      C_STANDARD 99
-                      C_EXTENSIONS OFF
-                      DEFINE_SYMBOL _GLFW_BUILD_DLL
-                      FOLDER "GLFW3")
+if (GLFW_BUILD_SHARED_LIBRARY)
+    set_target_properties(glfw PROPERTIES
+                          OUTPUT_NAME ${GLFW_LIB_NAME}
+                          VERSION ${GLFW_VERSION_MAJOR}.${GLFW_VERSION_MINOR}
+                          SOVERSION ${GLFW_VERSION_MAJOR}
+                          POSITION_INDEPENDENT_CODE ON
+                          C_STANDARD 99
+                          C_EXTENSIONS OFF
+                          FOLDER "GLFW3")
+
+    if (GLFW_LIBRARY_TYPE STREQUAL "OBJECT")
+        target_compile_definitions(glfw PUBLIC _GLFW_BUILD_DLL)
+    else()
+        target_compile_definitions(glfw PRIVATE _GLFW_BUILD_DLL)
+    endif()
+endif()
 
 target_include_directories(glfw PUBLIC
                            "$<BUILD_INTERFACE:${GLFW_SOURCE_DIR}/include>"
