@@ -1540,58 +1540,75 @@ GLFWbool _glfwRawMouseMotionSupportedCocoa(void)
     return GLFW_FALSE;
 }
 
-void _glfwPollEventsCocoa(void)
+void _glfwProcessEventsCocoa(GLFWbool wait, double timeout)
 {
     @autoreleasepool {
 
-    for (;;)
-    {
-        NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                            untilDate:[NSDate distantPast]
-                                               inMode:NSDefaultRunLoopMode
-                                              dequeue:YES];
-        if (event == nil)
-            break;
+    size_t size = 16; // Initial size is a 128 byte cacheline on Apple Silicon
+    NSEvent** events = _glfw_calloc(size, sizeof(NSEvent*));
+    int count = 0;
 
-        [NSApp sendEvent:event];
+    if (wait)
+    {
+        NSDate* date;
+        if (timeout == 0.0)
+            date = [NSDate distantFuture];
+        else
+            date = [NSDate dateWithTimeIntervalSinceNow:timeout];
+
+        // I wanted to pass NO to dequeue:, and rely on PollEvents to
+        // dequeue and send.  For reasons not at all clear to me, passing
+        // NO to dequeue: causes this method never to return.
+        events[count] = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                           untilDate:date
+                                              inMode:NSDefaultRunLoopMode
+                                             dequeue:YES];
+
+        if (events[count++] == nil)
+        {
+            _glfw_free(events);
+            return;
+        }
     }
 
+    for (;; count++)
+    {
+        if (count == size)
+        {
+            size *= 2;
+            events = _glfw_realloc(events, size * sizeof(NSEvent*));
+        }
+
+        events[count] = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                           untilDate:[NSDate distantPast]
+                                              inMode:NSDefaultRunLoopMode
+                                             dequeue:YES];
+
+        if (events[count] == nil)
+            break;
+    }
+
+    for (size_t i = 0; i < count; i++)
+        [NSApp sendEvent:events[i]];
+
+    _glfw_free(events);
+
     } // autoreleasepool
+}
+
+void _glfwPollEventsCocoa(void)
+{
+    _glfwProcessEventsCocoa(false, 0.0);
 }
 
 void _glfwWaitEventsCocoa(void)
 {
-    @autoreleasepool {
-
-    // I wanted to pass NO to dequeue:, and rely on PollEvents to
-    // dequeue and send.  For reasons not at all clear to me, passing
-    // NO to dequeue: causes this method never to return.
-    NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                        untilDate:[NSDate distantFuture]
-                                           inMode:NSDefaultRunLoopMode
-                                          dequeue:YES];
-    [NSApp sendEvent:event];
-
-    _glfwPollEventsCocoa();
-
-    } // autoreleasepool
+    _glfwProcessEventsCocoa(true, 0.0);
 }
 
 void _glfwWaitEventsTimeoutCocoa(double timeout)
 {
-    @autoreleasepool {
-
-    NSDate* date = [NSDate dateWithTimeIntervalSinceNow:timeout];
-    NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                        untilDate:date
-                                           inMode:NSDefaultRunLoopMode
-                                          dequeue:YES];
-    if (event)
-        [NSApp sendEvent:event];
-
-    _glfwPollEventsCocoa();
-
-    } // autoreleasepool
+    _glfwProcessEventsCocoa(true, timeout);
 }
 
 void _glfwPostEmptyEventCocoa(void)
