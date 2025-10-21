@@ -449,6 +449,15 @@ static void surfaceHandleEnter(void* userData,
     window->wl.outputScales[window->wl.outputScaleCount - 1] =
         (_GLFWscaleWayland) { output, monitor->wl.scale };
 
+    if (window->wl.outputScaleCount > 0)
+    {
+        window->currentMonitor = wl_output_get_user_data(window->wl.outputScales[0].output);
+    }
+    else
+    {
+        window->currentMonitor = NULL;
+    }
+
     _glfwUpdateBufferScaleFromOutputsWayland(window);
 }
 
@@ -470,6 +479,15 @@ static void surfaceHandleLeave(void* userData,
             window->wl.outputScaleCount--;
             break;
         }
+    }
+
+    if (window->wl.outputScaleCount > 0)
+    {
+        window->currentMonitor = wl_output_get_user_data(window->wl.outputScales[0].output);
+    }
+    else
+    {
+        window->currentMonitor = NULL;
     }
 
     _glfwUpdateBufferScaleFromOutputsWayland(window);

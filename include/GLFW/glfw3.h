@@ -4035,6 +4035,8 @@ GLFWAPI void glfwRequestWindowAttention(GLFWwindow* window);
  */
 GLFWAPI GLFWmonitor* glfwGetWindowMonitor(GLFWwindow* window);
 
+GLFWAPI GLFWmonitor* glfwGetWindowCurrentMonitor(GLFWwindow* window);
+
 /*! @brief Sets the mode, monitor, video mode and placement of a window.
  *
  *  This function sets the monitor that the window uses for full screen mode or,

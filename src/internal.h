@@ -557,6 +557,7 @@ struct _GLFWwindow
     GLFWbool            doublebuffer;
     GLFWvidmode         videoMode;
     _GLFWmonitor*       monitor;
+    _GLFWmonitor*       currentMonitor;
     _GLFWcursor*        cursor;
     char*               title;
 
