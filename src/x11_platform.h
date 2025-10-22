@@ -929,6 +929,7 @@ void _glfwHideWindowX11(_GLFWwindow* window);
 void _glfwRequestWindowAttentionX11(_GLFWwindow* window);
 void _glfwFocusWindowX11(_GLFWwindow* window);
 void _glfwSetWindowMonitorX11(_GLFWwindow* window, _GLFWmonitor* monitor, int xpos, int ypos, int width, int height, int refreshRate);
+GLFWmonitor* _glfwGetWindowCurrentMonitorX11(_GLFWwindow* window);
 GLFWbool _glfwWindowFocusedX11(_GLFWwindow* window);
 GLFWbool _glfwWindowIconifiedX11(_GLFWwindow* window);
 GLFWbool _glfwWindowVisibleX11(_GLFWwindow* window);

@@ -2548,6 +2548,12 @@ void _glfwSetWindowMonitorX11(_GLFWwindow* window,
     XFlush(_glfw.x11.display);
 }
 
+GLFWmonitor* _glfwGetWindowCurrentMonitorX11(_GLFWwindow* window)
+{
+    // TODO: implement
+    return NULL;
+}
+
 GLFWbool _glfwWindowFocusedX11(_GLFWwindow* window)
 {
     Window focused;

@@ -2056,6 +2056,12 @@ void _glfwSetWindowMonitorWin32(_GLFWwindow* window,
     }
 }
 
+GLFWmonitor* _glfwGetWindowCurrentMonitorWin32(_GLFWwindow* window)
+{
+    // TODO: implement
+    return NULL;
+}
+
 GLFWbool _glfwWindowFocusedWin32(_GLFWwindow* window)
 {
     return window->win32.handle == GetActiveWindow();

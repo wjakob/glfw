@@ -449,15 +449,6 @@ static void surfaceHandleEnter(void* userData,
     window->wl.outputScales[window->wl.outputScaleCount - 1] =
         (_GLFWscaleWayland) { output, monitor->wl.scale };
 
-    if (window->wl.outputScaleCount > 0)
-    {
-        window->currentMonitor = wl_output_get_user_data(window->wl.outputScales[0].output);
-    }
-    else
-    {
-        window->currentMonitor = NULL;
-    }
-
     _glfwUpdateBufferScaleFromOutputsWayland(window);
 }
 
@@ -479,15 +470,6 @@ static void surfaceHandleLeave(void* userData,
             window->wl.outputScaleCount--;
             break;
         }
-    }
-
-    if (window->wl.outputScaleCount > 0)
-    {
-        window->currentMonitor = wl_output_get_user_data(window->wl.outputScales[0].output);
-    }
-    else
-    {
-        window->currentMonitor = NULL;
     }
 
     _glfwUpdateBufferScaleFromOutputsWayland(window);
@@ -2981,6 +2963,16 @@ void _glfwSetWindowMonitorWayland(_GLFWwindow* window,
         acquireMonitor(window);
     else
         _glfwSetWindowSizeWayland(window, width, height);
+}
+
+GLFWmonitor* _glfwGetWindowCurrentMonitorWayland(_GLFWwindow* window)
+{
+    if (window->wl.outputScaleCount > 0)
+    {
+        return wl_output_get_user_data(window->wl.outputScales[0].output);
+    }
+
+    return NULL;
 }
 
 GLFWbool _glfwWindowFocusedWayland(_GLFWwindow* window)
