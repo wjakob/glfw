@@ -1862,11 +1862,55 @@ static void pointerHandleAxis(void* userData,
     if (!window)
         return;
 
-    // NOTE: 10 units of motion per mouse wheel step seems to be a common ratio
+    if (wl_pointer_get_version(pointer) >= WL_POINTER_AXIS_VALUE120_SINCE_VERSION)
+        // Ignore this event, as we will get a more precise axis_value120 event
+        return;
+
+    // NOTE: 15 units of motion per mouse wheel step seems to be a common ratio to wheel detents
     if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
-        _glfwInputScroll(window, -wl_fixed_to_double(value) / 10.0, 0.0);
+        _glfwInputScroll(window, -wl_fixed_to_double(value) / 15.0, 0.0);
     else if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
-        _glfwInputScroll(window, 0.0, -wl_fixed_to_double(value) / 10.0);
+        _glfwInputScroll(window, 0.0, -wl_fixed_to_double(value) / 15.0);
+}
+
+static void pointerHandleFrame(void* userData,
+                               struct wl_pointer* pointer)
+{
+}
+
+static void pointerHandleAxisSource(void* userData,
+                                    struct wl_pointer* pointer,
+                                    uint32_t axisSource)
+{
+}
+
+static void pointerHandleAxisStop(void* userData,
+                                  struct wl_pointer* pointer,
+                                  uint32_t time,
+                                  uint32_t axis)
+{
+}
+
+static void pointerHandleAxisDiscrete(void* userData,
+                                      struct wl_pointer* pointer,
+                                      uint32_t axis,
+                                      int32_t discrete)
+{
+}
+
+static void pointerHandleAxisValue120(void* userData,
+                                     struct wl_pointer* pointer,
+                                     uint32_t axis,
+                                     int32_t value120)
+{
+    _GLFWwindow* window = _glfw.wl.pointerFocus;
+    if (!window)
+        return;
+
+    if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
+        _glfwInputScroll(window, -value120 / 120.0f, 0.0);
+    else if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
+        _glfwInputScroll(window, 0.0, -value120 / 120.0f);
 }
 
 static const struct wl_pointer_listener pointerListener =
@@ -1876,6 +1920,11 @@ static const struct wl_pointer_listener pointerListener =
     pointerHandleMotion,
     pointerHandleButton,
     pointerHandleAxis,
+    pointerHandleFrame,
+    pointerHandleAxisSource,
+    pointerHandleAxisStop,
+    pointerHandleAxisDiscrete,
+    pointerHandleAxisValue120,
 };
 
 static void keyboardHandleKeymap(void* userData,
