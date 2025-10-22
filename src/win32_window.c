@@ -2058,7 +2058,18 @@ void _glfwSetWindowMonitorWin32(_GLFWwindow* window,
 
 GLFWmonitor* _glfwGetWindowCurrentMonitorWin32(_GLFWwindow* window)
 {
-    // TODO: implement
+    HMONITOR hMonitor = MonitorFromWindow(window->win32.handle, MONITOR_DEFAULTTONEAREST);
+
+    int monitorCount;
+    GLFWmonitor **monitors = glfwGetMonitors(&monitorCount);
+
+    for (int i = 0;  i < monitorCount;  i++)
+    {
+        _GLFWmonitor* monitor = (_GLFWmonitor*) monitors[i];
+        if (monitor->win32.handle == hMonitor)
+            return monitors[i];
+    }
+
     return NULL;
 }
 
