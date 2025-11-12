@@ -3034,6 +3034,16 @@ void _glfwSetWindowMonitorWayland(_GLFWwindow* window,
         _glfwSetWindowSizeWayland(window, width, height);
 }
 
+GLFWmonitor* _glfwGetWindowCurrentMonitorWayland(_GLFWwindow* window)
+{
+    if (window->wl.outputScaleCount > 0)
+    {
+        return wl_output_get_user_data(window->wl.outputScales[0].output);
+    }
+
+    return NULL;
+}
+
 GLFWbool _glfwWindowFocusedWayland(_GLFWwindow* window)
 {
     return _glfw.wl.keyboardFocus == window;

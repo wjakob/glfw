@@ -94,6 +94,7 @@ GLFWbool _glfwConnectNull(int platformID, _GLFWplatform* platform)
         .requestWindowAttention = _glfwRequestWindowAttentionNull,
         .focusWindow = _glfwFocusWindowNull,
         .setWindowMonitor = _glfwSetWindowMonitorNull,
+        .getWindowCurrentMonitor = _glfwGetWindowCurrentMonitorNull,
         .windowFocused = _glfwWindowFocusedNull,
         .windowIconified = _glfwWindowIconifiedNull,
         .windowVisible = _glfwWindowVisibleNull,

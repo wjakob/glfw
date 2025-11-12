@@ -221,6 +221,11 @@ void _glfwSetWindowMonitorNull(_GLFWwindow* window,
     }
 }
 
+GLFWmonitor* _glfwGetWindowCurrentMonitorNull(_GLFWwindow* window)
+{
+    return NULL;
+}
+
 void _glfwGetWindowPosNull(_GLFWwindow* window, int* xpos, int* ypos)
 {
     if (xpos)

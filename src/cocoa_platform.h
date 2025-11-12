@@ -244,6 +244,7 @@ void _glfwHideWindowCocoa(_GLFWwindow* window);
 void _glfwRequestWindowAttentionCocoa(_GLFWwindow* window);
 void _glfwFocusWindowCocoa(_GLFWwindow* window);
 void _glfwSetWindowMonitorCocoa(_GLFWwindow* window, _GLFWmonitor* monitor, int xpos, int ypos, int width, int height, int refreshRate);
+GLFWmonitor* _glfwGetWindowCurrentMonitorCocoa(_GLFWwindow* window);
 GLFWbool _glfwWindowFocusedCocoa(_GLFWwindow* window);
 GLFWbool _glfwWindowIconifiedCocoa(_GLFWwindow* window);
 GLFWbool _glfwWindowVisibleCocoa(_GLFWwindow* window);

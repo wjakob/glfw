@@ -1054,6 +1054,16 @@ GLFWAPI GLFWmonitor* glfwGetWindowMonitor(GLFWwindow* handle)
     return (GLFWmonitor*) window->monitor;
 }
 
+GLFWAPI GLFWmonitor* glfwGetWindowCurrentMonitor(GLFWwindow* handle)
+{
+    _GLFW_REQUIRE_INIT_OR_RETURN(NULL);
+
+    _GLFWwindow* window = (_GLFWwindow*) handle;
+    assert(window != NULL);
+
+    return _glfw.platform.getWindowCurrentMonitor(window);
+}
+
 GLFWAPI void glfwSetWindowMonitor(GLFWwindow* wh,
                                   GLFWmonitor* mh,
                                   int xpos, int ypos,

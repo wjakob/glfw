@@ -2548,6 +2548,33 @@ void _glfwSetWindowMonitorX11(_GLFWwindow* window,
     XFlush(_glfw.x11.display);
 }
 
+GLFWmonitor* _glfwGetWindowCurrentMonitorX11(_GLFWwindow* window)
+{
+    int sizeX, sizeY;
+    _glfwGetWindowSizeX11(window, &sizeX, &sizeY);
+    int centerX, centerY;
+    _glfwGetWindowPosX11(window, &centerX, &centerY);
+    centerX += sizeX / 2;
+    centerY += sizeY / 2;
+
+    int monitorCount = 0;
+    GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+    for (int i = 0;  i < monitorCount;  i++)
+    {
+        GLFWmonitor* monitor = monitors[i];
+        int x, y, width, height;
+        glfwGetMonitorWorkarea(monitor, &x, &y, &width, &height);
+
+        if (centerX >= x && centerX < x + width &&
+            centerY >= y && centerY < y + height)
+        {
+            return monitor;
+        }
+    }
+
+    return NULL;
+}
+
 GLFWbool _glfwWindowFocusedX11(_GLFWwindow* window)
 {
     Window focused;
