@@ -224,6 +224,7 @@ void _glfwDestroyWindowNull(_GLFWwindow* window);
 void _glfwSetWindowTitleNull(_GLFWwindow* window, const char* title);
 void _glfwSetWindowIconNull(_GLFWwindow* window, int count, const GLFWimage* images);
 void _glfwSetWindowMonitorNull(_GLFWwindow* window, _GLFWmonitor* monitor, int xpos, int ypos, int width, int height, int refreshRate);
+GLFWmonitor* _glfwGetWindowCurrentMonitorNull(_GLFWwindow* window);
 void _glfwGetWindowPosNull(_GLFWwindow* window, int* xpos, int* ypos);
 void _glfwSetWindowPosNull(_GLFWwindow* window, int xpos, int ypos);
 void _glfwGetWindowSizeNull(_GLFWwindow* window, int* width, int* height);
