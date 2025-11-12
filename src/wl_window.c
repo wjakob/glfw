@@ -1970,17 +1970,17 @@ static void pointerHandleAxis(void* userData,
     {
         _glfw.wl.pending.events |= GLFW_PENDING_SCROLL;
         if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
-            _glfw.wl.pending.scrollX = -wl_fixed_to_double(value) / 10.0;
+            _glfw.wl.pending.scrollX = -wl_fixed_to_double(value) / 15.0;
         else if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
-            _glfw.wl.pending.scrollY = -wl_fixed_to_double(value) / 10.0;
+            _glfw.wl.pending.scrollY = -wl_fixed_to_double(value) / 15.0;
     }
     else
     {
-        // NOTE: 10 units of motion per mouse wheel step seems to be a common ratio
+        // NOTE: 15 units of motion per mouse wheel step seems to be a common ratio to wheel detents
         if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
-            processPointerScroll(-wl_fixed_to_double(value) / 10.0, 0.0);
+            processPointerScroll(-wl_fixed_to_double(value) / 15.0, 0.0);
         else if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
-            processPointerScroll(0.0, -wl_fixed_to_double(value) / 10.0);
+            processPointerScroll(0.0, -wl_fixed_to_double(value) / 15.0);
     }
 }
 
