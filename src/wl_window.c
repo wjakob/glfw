@@ -2721,6 +2721,26 @@ void _glfwSetWindowSizeWayland(_GLFWwindow* window, int width, int height)
             libdecor_state_free(frameState);
         }
 
+        if (window->wl.xdg.toplevel)
+        {
+            // Some Wayland compositors (e.g. Hyprland) require setting both
+            // min and max size to the same values to effectively resize a
+            // floating window. Hence, when resizing under wayland, set min/max
+            // sizes to the newly desired window size for a moment, then
+            // restore the limits.
+            // https://github.com/hyprwm/Hyprland/discussions/11723
+            xdg_toplevel_set_min_size(window->wl.xdg.toplevel,
+                                      window->wl.width,
+                                      window->wl.height);
+            xdg_toplevel_set_max_size(window->wl.xdg.toplevel,
+                                      window->wl.width,
+                                      window->wl.height);
+
+            wl_surface_commit(window->wl.surface);
+
+            updateXdgSizeLimits(window);
+        }
+
         if (window->wl.visible)
             _glfwInputWindowDamage(window);
     }
