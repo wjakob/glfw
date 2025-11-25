@@ -1697,7 +1697,6 @@ float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
         return 80.0f;
     }
 
-    // Find the first active path TODO: find path for the current window
     for (UINT32 i = 0; i < numPaths; i++) {
         if (!(paths[i].flags & DISPLAYCONFIG_PATH_ACTIVE)) {
             continue;
@@ -1725,8 +1724,14 @@ float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
         advancedColorInfo.header.id = paths[i].targetInfo.id;
         result = DisplayConfigGetDeviceInfo(&advancedColorInfo.header);
 
-        if (result != ERROR_SUCCESS || advancedColorInfo.advancedColorEnabled == 0) {
+        if (result != ERROR_SUCCESS) {
             continue;
+        }
+
+        if (advancedColorInfo.advancedColorEnabled == 0) {
+            _glfw_free(paths);
+            _glfw_free(modes);
+            return 80.0f;
         }
 
         DISPLAYCONFIG_SDR_WHITE_LEVEL whiteLevel;
@@ -1739,13 +1744,13 @@ float _glfwGetWindowSdrWhiteLevelWin32(_GLFWwindow* window) {
             continue;
         }
 
+        _glfw_free(paths);
+        _glfw_free(modes);
         return whiteLevel.SDRWhiteLevel / 1000.0f * 80.0f;
     }
 
     _glfw_free(paths);
     _glfw_free(modes);
-
-    memset(0, 0, 0);
     return 80.0f; // sRGB standard white level
 }
 
