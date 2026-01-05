@@ -1223,8 +1223,8 @@ static GLFWbool supportsColorManagement(_GLFWwindow* window)
         return GLFW_FALSE;
 
     if (!_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB] &&
+        !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22] &&
         !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ] &&
-        !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG] &&
         !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
         return GLFW_FALSE;
 
@@ -2699,6 +2699,22 @@ float _glfwGetWindowMaxLuminanceWayland(_GLFWwindow* window)
     return window->wl.maxLuminance;
 }
 
+uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
+{
+    if (!supportsColorManagement(window))
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22;
+
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ]
+        && (window->wl.maxLuminance == 0.0f || window->wl.maxLuminance > 80.0f))
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ;
+
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB;
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB])
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
+    return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22;
+}
+
 uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
 {
     if (!supportsColorManagement(window))
@@ -2706,21 +2722,8 @@ uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
 
     if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_BT2020])
         return WP_COLOR_MANAGER_V1_PRIMARIES_BT2020;
+
     return WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
-}
-
-uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
-{
-    if (!supportsColorManagement(window))
-        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
-
-    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ])
-        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ;
-    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG])
-        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG;
-    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
-        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB;
-    return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
 }
 
 uint32_t _glfwGetWindowRenderingIntentWayland(_GLFWwindow* window)
