@@ -183,6 +183,7 @@ video tutorials.
  - Jon Morton
  - Pierre Moulon
  - Martins Mozeiko
+ - Tomáš Mráz
  - Pascal Muetschard
  - James Murphy
  - Julian Møller
