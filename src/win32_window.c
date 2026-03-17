@@ -1759,15 +1759,12 @@ float _glfwGetWindowMinLuminanceWin32(_GLFWwindow* window) {
 }
 
 GLFWbool _glfwGetWindowAdvancedColorEnabledWin32(_GLFWwindow* window) {
-    if (window->bitsPerSample != 16) {
-        // If we don't have a fp16 frame buffer, Windows does not expect scRGB
-        // with proper SDR white level scaling, it instead expects standard
-        // sRGB whose reference white level should be 80 nits. (Even though the
-        // screen's reference white level -- obtained by the bottom code --
-        // might be different. In that case Windows does the remapping for us.)
-        return GLFW_FALSE;
-    }
-
+    // Note: we cannot early return based on whether we have a 16 bit buffer.
+    // Some drivers won't give us a 16 bit buffer, even if advanced color is enabled
+    // (e.g. in pure wide-color, non-HDR situations, or when the driver is limited).
+    // In such cases, advanced color determines whether Windows treats out data as sRGB piecewise
+    // or whether it simply forwards it to the monitor, in which case we should produce gamma 2.2
+    // instead to match what most monitors do.
     UINT32 numPaths, numModes;
     LONG result;
 
@@ -1838,7 +1835,7 @@ GLFWbool _glfwGetWindowAdvancedColorEnabledWin32(_GLFWwindow* window) {
         _glfw_free(paths);
         _glfw_free(modes);
 
-        return advancedColorInfo.advancedColorEnabled != 0;
+        return advancedColorInfo.advancedColorEnabled != 0 || advancedColorInfo.wideColorEnforced != 0;
     }
 
     _glfw_free(paths);
@@ -1850,7 +1847,7 @@ GLFWbool _glfwGetWindowAdvancedColorEnabledWin32(_GLFWwindow* window) {
 float _glfwGetWindowMaxLuminanceWin32(_GLFWwindow* window) {
     // If advanced color is not enabled, return standard sRGB max luminance (not HDR).
     // Otherwise return 0.0 to indicate no known limit.
-    return _glfwGetWindowAdvancedColorEnabledWin32(window) ? 0.0f : 80.0f;
+    return window->bitsPerSample >= 16 && _glfwGetWindowAdvancedColorEnabledWin32(window) ? 0.0f : 80.0f;
 }
 
 uint32_t _glfwGetWindowPrimariesWin32(_GLFWwindow* window)
@@ -1861,8 +1858,9 @@ uint32_t _glfwGetWindowPrimariesWin32(_GLFWwindow* window)
 uint32_t _glfwGetWindowTransferWin32(_GLFWwindow* window)
 {
     // If we managed to get a fp16 frame buffer on Windows, we need to output scRGB
-    // i.e. linear colors w/ sRGB primaries.
-    return window->bitsPerSample == 16 ? 5 : 10; // 5 == linear, 10 == EXT sRGB
+    // i.e. linear colors w/ sRGB primaries. Notably, Windows recently 
+    // 5 == linear, 10 == EXT sRGB, 2 == gamma 2.2
+    return window->bitsPerSample >= 16 ? 5 : (_glfwGetWindowAdvancedColorEnabledWin32(window) ? 10 : 2);
 }
 
 void _glfwGetWindowSizeWin32(_GLFWwindow* window, int* width, int* height)
