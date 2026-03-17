@@ -2212,7 +2212,7 @@ uint32_t _glfwGetWindowPrimariesX11(_GLFWwindow* window)
 
 uint32_t _glfwGetWindowTransferX11(_GLFWwindow* window)
 {
-    return 10; // EXT sRGB
+    return 2; // Gamma 2.2
 }
 
 void _glfwGetWindowSizeX11(_GLFWwindow* window, int* width, int* height)
