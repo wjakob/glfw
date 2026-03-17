@@ -269,7 +269,7 @@ uint32_t _glfwGetWindowPrimariesNull(_GLFWwindow* window)
 
 uint32_t _glfwGetWindowTransferNull(_GLFWwindow* window)
 {
-    return 10; // EXT sRGB
+    return 2; // Gamma 2.2
 }
 
 void _glfwGetWindowSizeNull(_GLFWwindow* window, int* width, int* height)
