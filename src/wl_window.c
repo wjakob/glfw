@@ -1219,13 +1219,16 @@ static GLFWbool supportsColorManagement(_GLFWwindow* window)
         return GLFW_FALSE;
 
     if (!_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_SRGB] &&
+        !_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3] &&
+        !_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3] &&
+        !_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_ADOBE_RGB] &&
         !_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_BT2020])
         return GLFW_FALSE;
 
     if (!_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB] &&
         !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22] &&
         !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ] &&
-        !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
+        !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR])
         return GLFW_FALSE;
 
     return GLFW_TRUE;
@@ -2704,15 +2707,22 @@ uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
     if (!supportsColorManagement(window))
         return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22;
 
+    // If we've got 16 bits per sample, that means we have a floating point buffer that supports
+    // negative values for arbitrarily wide color spaces. Furthermore, floating point buffers
+    // are inherently perceptually ~linear, so we should prefer linear transfer above other options.
+    if (window->bitsPerSample >= 16) {
+        if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR])
+            return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR;
+    }
+
+    // Else, (e.g. with 10 or 12 bits buffers), prefer PQ since that'll give us a high dynamic range
     if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ]
         && (window->wl.maxLuminance == 0.0f || window->wl.maxLuminance > 80.0f))
         return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ;
 
-    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB])
-        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB;
-    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB])
-        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB;
-    return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22;
+    if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22])
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22;
+    return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB; // Fall back to ambiguous sRGB only as a last resort
 }
 
 uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
@@ -2722,6 +2732,15 @@ uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
 
     if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_BT2020])
         return WP_COLOR_MANAGER_V1_PRIMARIES_BT2020;
+
+    if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_ADOBE_RGB])
+        return WP_COLOR_MANAGER_V1_PRIMARIES_ADOBE_RGB;
+
+    if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3])
+        return WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3;
+
+    if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3])
+        return WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3;
 
     return WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
 }
