@@ -474,7 +474,7 @@ typedef struct _GLFWlibraryWayland
         GLFWbool setTfPower;
         GLFWbool setLuminance;
         GLFWbool setMasteringDisplayPrimaries;
-        GLFWbool setExtendedTargetVolume;
+        GLFWbool extendedTargetVolume;
         GLFWbool windowsScrgb;
 
         GLFWbool primaries[11];

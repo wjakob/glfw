@@ -746,6 +746,17 @@ static float transferDefaultMaxNits(enum wp_color_manager_v1_transfer_function t
     }
 }
 
+static float transferDefaultRefWhiteNits(enum wp_color_manager_v1_transfer_function tf)
+{
+    switch (tf)
+    {
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_BT1886: return 100.0f;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ: return 203.0f;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG: return 203.0f;
+        default: return 80.0f;
+    }
+}
+
 static GLFWbool updateColorManagedSurface(_GLFWwindow* window)
 {
     // These functions take into account the color management support of the compositor
@@ -763,7 +774,7 @@ static GLFWbool updateColorManagedSurface(_GLFWwindow* window)
     wp_image_description_creator_params_v1_set_primaries_named(creator, primaries);
     wp_image_description_creator_params_v1_set_tf_named(creator, tf);
 
-    if (_glfw.wl.colorManagerSupport.setLuminance && (window->wl.sdrWhiteLevel != 0.0f || window->wl.minLuminance != 0.0f || window->wl.maxLuminance != 0.0f))
+    if (_glfw.wl.colorManagerSupport.setLuminance && window->wl.sdrWhiteLevel != 0.0f)
     {
         // We follow the system's SDR white level while maintaining the default color volume of the selected transfer function (as specified in the wp_color_manager_v1 spec)
         // To render HDR colors with transfer functions that come with a small default color volume, FP framebuffers are necessary to avoid clipping [0, 1].
@@ -771,6 +782,10 @@ static GLFWbool updateColorManagedSurface(_GLFWwindow* window)
                                                               (uint32_t)(transferDefaultMinNits(tf) * WAYLAND_MIN_LUMINANCE_FACTOR),
                                                               (uint32_t)transferDefaultMaxNits(tf),
                                                               (uint32_t)window->wl.sdrWhiteLevel);
+    } else {
+        // If the compositor does not let us set the white level of our surface, or does not report a system white level to us (value of 0),  we have to adhere to the
+        // *default* white level of our chosen transfer function, *not* the system white level reported to us by the compositor.
+        window->wl.sdrWhiteLevel = transferDefaultRefWhiteNits(tf);
     }
 
     struct wp_image_description_v1* image_description = wp_image_description_creator_params_v1_create(creator);
@@ -2963,6 +2978,14 @@ float _glfwGetWindowMaxLuminanceWayland(_GLFWwindow* window)
     return window->wl.maxLuminance;
 }
 
+static GLFWbool supportsExtendedValues(_GLFWwindow* window)
+{
+    return
+        supportsColorManagement(window) &&
+        _glfw.wl.colorManagerSupport.extendedTargetVolume &&
+        window->bitsPerSample >= 16; // floating point buffers are required for values outside of [0, 1]
+}
+
 uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
 {
     if (!supportsColorManagement(window))
@@ -2971,10 +2994,8 @@ uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
     // If we've got 16 bits per sample, that means we have a floating point buffer that supports
     // negative values for arbitrarily wide color spaces. Furthermore, floating point buffers
     // are inherently perceptually ~linear, so we should prefer linear transfer above other options.
-    if (window->bitsPerSample >= 16) {
-        if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR])
-            return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR;
-    }
+    if (supportsExtendedValues(window) && _glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR])
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR;
 
     // Else, (e.g. with 10 or 12 bits buffers), prefer PQ since that'll give us a high dynamic range
     if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ]
@@ -2989,6 +3010,13 @@ uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
 uint32_t _glfwGetWindowPrimariesWayland(_GLFWwindow* window)
 {
     if (!supportsColorManagement(window))
+        return WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
+
+    // We don't strictly have to use sRGB primaries when using a linear transfer, but it's a safer option than using other primaries
+    // for compatibility reasons. Most compositors supporting EXT_LINEAR will do so to support Windows scRGB, which uses sRGB primaries.
+    // According to the color management spec, any supported transfer should be useable with any supported primaries, but we've seen
+    // crazy things hardcoded in some compositors, so let's be safe here.
+    if (_glfwGetWindowTransferWayland(window) == WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR)
         return WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
 
     if (_glfw.wl.colorManagerSupport.primaries[WP_COLOR_MANAGER_V1_PRIMARIES_BT2020])

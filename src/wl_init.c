@@ -144,7 +144,7 @@ void colorManagerHandleSupportedFeature(void *userData, struct wp_color_manager_
         wl->colorManagerSupport.setMasteringDisplayPrimaries = GLFW_TRUE;
         break;
     case WP_COLOR_MANAGER_V1_FEATURE_EXTENDED_TARGET_VOLUME:
-        wl->colorManagerSupport.setExtendedTargetVolume = GLFW_TRUE;
+        wl->colorManagerSupport.extendedTargetVolume = GLFW_TRUE;
         break;
     case WP_COLOR_MANAGER_V1_FEATURE_WINDOWS_SCRGB:
         wl->colorManagerSupport.windowsScrgb = GLFW_TRUE;
