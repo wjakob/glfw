@@ -724,6 +724,28 @@ const struct wp_fractional_scale_v1_listener fractionalScaleListener =
 #define WAYLAND_COLOR_FACTOR 1000000
 #define WAYLAND_MIN_LUMINANCE_FACTOR 10000
 
+static float transferDefaultMinNits(enum wp_color_manager_v1_transfer_function tf)
+{
+    switch (tf)
+    {
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_BT1886: return 0.01f;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ: return 0.005f;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG: return 0.005f;
+        default: return 0.02f;
+    }
+}
+
+static float transferDefaultMaxNits(enum wp_color_manager_v1_transfer_function tf)
+{
+    switch (tf)
+    {
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_BT1886: return 100.0f;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ: return 10000.0f;
+        case WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG: return 1000.0f;
+        default: return 80.0f; // Assume a reasonable default for unknown transfer functions
+    }
+}
+
 static GLFWbool updateColorManagedSurface(_GLFWwindow* window)
 {
     // These functions take into account the color management support of the compositor
@@ -743,9 +765,11 @@ static GLFWbool updateColorManagedSurface(_GLFWwindow* window)
 
     if (_glfw.wl.colorManagerSupport.setLuminance && (window->wl.sdrWhiteLevel != 0.0f || window->wl.minLuminance != 0.0f || window->wl.maxLuminance != 0.0f))
     {
+        // We follow the system's SDR white level while maintaining the default color volume of the selected transfer function (as specified in the wp_color_manager_v1 spec)
+        // To render HDR colors with transfer functions that come with a small default color volume, FP framebuffers are necessary to avoid clipping [0, 1].
         wp_image_description_creator_params_v1_set_luminances(creator,
-                                                              (uint32_t)(window->wl.minLuminance * WAYLAND_MIN_LUMINANCE_FACTOR),
-                                                              (uint32_t)window->wl.maxLuminance,
+                                                              (uint32_t)(transferDefaultMinNits(tf) * WAYLAND_MIN_LUMINANCE_FACTOR),
+                                                              (uint32_t)transferDefaultMaxNits(tf),
                                                               (uint32_t)window->wl.sdrWhiteLevel);
     }
 
@@ -1396,7 +1420,7 @@ static GLFWbool supportsColorManagement(_GLFWwindow* window)
 
     if (!_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB] &&
         !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22] &&
-        // !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR] &&
+        !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR] &&
         !_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ]
     )
         return GLFW_FALSE;
@@ -2947,10 +2971,10 @@ uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
     // If we've got 16 bits per sample, that means we have a floating point buffer that supports
     // negative values for arbitrarily wide color spaces. Furthermore, floating point buffers
     // are inherently perceptually ~linear, so we should prefer linear transfer above other options.
-    // if (window->bitsPerSample >= 16) {
-    //     if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR])
-    //         return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR;
-    // }
+    if (window->bitsPerSample >= 16) {
+        if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR])
+            return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR;
+    }
 
     // Else, (e.g. with 10 or 12 bits buffers), prefer PQ since that'll give us a high dynamic range
     if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ]
