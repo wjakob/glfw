@@ -207,6 +207,16 @@ const _GLFWfbconfig* _glfwChooseFBConfig(const _GLFWfbconfig* desired,
             continue;
         }
 
+#ifdef _WIN32
+        if (current->floatbuffer && current->redBits != 16) {
+            // On Windows, floating point buffers sometimes come with 32 (or more) bits per channel
+            // but the color space is then ill-defined. For example, some users obtained fp32 buffers
+            // yet Windows expected sRGB data, not scRGB. Best to steer clear.
+            // See https://github.com/Tom94/tev/issues/440#issuecomment-4459345188
+            continue;
+        }
+#endif
+
         // Count number of missing buffers
         {
             missing = 0;
