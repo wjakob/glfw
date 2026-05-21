@@ -788,6 +788,22 @@ static GLFWbool updateColorManagedSurface(_GLFWwindow* window)
         window->wl.sdrWhiteLevel = transferDefaultRefWhiteNits(tf);
     }
 
+    if (tf == WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR && _glfw.wl.colorManagerSupport.setMasteringDisplayPrimaries)
+    {
+        // Communicate to the compositor that, while we might be a linear space with narrow color volume, like scRGB, we will
+        // express colors in a larger volume (BT.2100) using values outside of the [0, 1] range.
+        
+        wp_image_description_creator_params_v1_set_mastering_display_primaries(creator,
+            (uint32_t)(0.708f * WAYLAND_COLOR_FACTOR), (uint32_t)(0.292f * WAYLAND_COLOR_FACTOR),
+            (uint32_t)(0.170f * WAYLAND_COLOR_FACTOR), (uint32_t)(0.797f * WAYLAND_COLOR_FACTOR),
+            (uint32_t)(0.131f * WAYLAND_COLOR_FACTOR), (uint32_t)(0.046f * WAYLAND_COLOR_FACTOR),
+            (uint32_t)(0.31271f * WAYLAND_COLOR_FACTOR), (uint32_t)(0.32902f * WAYLAND_COLOR_FACTOR));
+
+        wp_image_description_creator_params_v1_set_mastering_luminance(creator,
+            (uint32_t)(transferDefaultMinNits(WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ) * WAYLAND_MIN_LUMINANCE_FACTOR),
+            (uint32_t)(transferDefaultMaxNits(WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ)));
+    }
+
     struct wp_image_description_v1* image_description = wp_image_description_creator_params_v1_create(creator);
 
     if (!image_description)
@@ -2982,6 +2998,7 @@ static GLFWbool supportsExtendedValues(_GLFWwindow* window)
 {
     return
         supportsColorManagement(window) &&
+        _glfw.wl.colorManagerSupport.setMasteringDisplayPrimaries &&
         _glfw.wl.colorManagerSupport.extendedTargetVolume &&
         window->bitsPerSample >= 16; // floating point buffers are required for values outside of [0, 1]
 }
