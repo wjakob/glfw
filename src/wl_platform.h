@@ -375,7 +375,6 @@ typedef struct _GLFWwindowWayland
     GLFWbool                    transparent;
     GLFWbool                    scaleFramebuffer;
     struct wl_surface*          surface;
-    struct wl_callback*         callback;
 
     struct {
         struct wl_event_queue*  queue;
