@@ -3011,9 +3011,8 @@ uint32_t _glfwGetWindowTransferWayland(_GLFWwindow* window)
     // If we've got 16 bits per sample, that means we have a floating point buffer that supports
     // negative values for arbitrarily wide color spaces. Furthermore, floating point buffers
     // are inherently perceptually ~linear, so we should prefer linear transfer above other options.
-    // TODO: re-enable this when it has been more thoroughly tested across compositors
-    // if (supportsExtendedValues(window) && _glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR])
-    //     return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR;
+    if (supportsExtendedValues(window) && _glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR])
+        return WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR;
 
     // Else, (e.g. with 10 or 12 bits buffers), prefer PQ since that'll give us a high dynamic range
     if (_glfw.wl.colorManagerSupport.tfs[WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ]
