@@ -748,7 +748,11 @@ GLFWbool _glfwCreateContextEGL(_GLFWwindow* window,
 
     if (_glfw.platform.platformID == GLFW_PLATFORM_WAYLAND)
     {
-        if (_glfw.egl.EXT_present_opaque)
+        // HACK: NVIDIA drivers support fp16 frame buffers since 610.43.X, but not the opaque variant
+        // Skip the opaqueness attribute, relying on the app itself to produce alpha==1 values everywhere.
+        // This can probably be removed once https://github.com/NVIDIA/egl-wayland2/issues/48 reaches
+        // a stable release.
+        if (_glfw.egl.EXT_present_opaque && !fbconfig->floatbuffer)
             SET_ATTRIB(EGL_PRESENT_OPAQUE_EXT, !fbconfig->transparent);
     }
 
