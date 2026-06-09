@@ -98,6 +98,7 @@ video tutorials.
  - Andrew Gutekanst
  - Stephen Gutekanst
  - Jonathan Hale
+ - halx99
  - Daniel Hauser
  - hdf89shfdfs
  - Moritz Heinemann
