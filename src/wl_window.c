@@ -896,6 +896,10 @@ void libdecorFrameHandleConfigure(struct libdecor_frame* frame,
     libdecor_frame_commit(frame, frameState, config);
     libdecor_state_free(frameState);
 
+    // NOTE: Frame visibility must only be set after a frame state has been committed
+    if (window->decorated != libdecor_frame_is_visible(window->wl.libdecor.frame))
+        libdecor_frame_set_visibility(window->wl.libdecor.frame, window->decorated);
+
     if (window->wl.activated != activated)
     {
         window->wl.activated = activated;
@@ -977,11 +981,6 @@ static GLFWbool createLibdecorFrame(_GLFWwindow* window)
         return GLFW_FALSE;
     }
 
-    struct libdecor_state* frameState =
-        libdecor_state_new(window->wl.width, window->wl.height);
-    libdecor_frame_commit(window->wl.libdecor.frame, frameState, NULL);
-    libdecor_state_free(frameState);
-
     if (strlen(window->wl.appId))
         libdecor_frame_set_app_id(window->wl.libdecor.frame, window->wl.appId);
 
@@ -1017,11 +1016,10 @@ static GLFWbool createLibdecorFrame(_GLFWwindow* window)
     }
     else
     {
+        // Frame visibility is applied in libdecorFrameHandleConfigure
+
         if (window->wl.maximized)
             libdecor_frame_set_maximized(window->wl.libdecor.frame);
-
-        if (!window->decorated)
-            libdecor_frame_set_visibility(window->wl.libdecor.frame, false);
 
         setIdleInhibitor(window, GLFW_FALSE);
     }
