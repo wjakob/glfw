@@ -1375,24 +1375,27 @@ static void handleEvents(double* timeout)
 #endif
 
     GLFWbool event = GLFW_FALSE;
-    enum { DISPLAY_FD, KEYREPEAT_FD, CURSOR_FD, LIBDECOR_FD };
+    enum { DISPLAY_FD, KEYREPEAT_FD, CURSOR_FD };
     struct pollfd fds[] =
     {
         [DISPLAY_FD] = { wl_display_get_fd(_glfw.wl.display), POLLIN },
         [KEYREPEAT_FD] = { _glfw.wl.keyRepeatTimerfd, POLLIN },
-        [CURSOR_FD] = { _glfw.wl.cursorTimerfd, POLLIN },
-        [LIBDECOR_FD] = { -1, POLLIN }
+        [CURSOR_FD] = { _glfw.wl.cursorTimerfd, POLLIN }
     };
-
-    if (_glfw.wl.libdecor.context)
-        fds[LIBDECOR_FD].fd = libdecor_get_fd(_glfw.wl.libdecor.context);
 
     while (!event)
     {
+        if (_glfw.wl.libdecor.context)
+        {
+            // Dispatch unconditionally because it also processes non-Wayland events
+            if (libdecor_dispatch(_glfw.wl.libdecor.context, 0) > 0)
+                event = GLFW_TRUE;
+        }
+
         while (wl_display_prepare_read(_glfw.wl.display) != 0)
         {
             if (wl_display_dispatch_pending(_glfw.wl.display) > 0)
-                return;
+                event = GLFW_TRUE;
         }
 
         // If an error other than EAGAIN happens, we have likely been disconnected
@@ -1410,6 +1413,11 @@ static void handleEvents(double* timeout)
 
             return;
         }
+
+        double immediate = 0.0;
+
+        if (event)
+            timeout = &immediate;
 
         if (!_glfwPollPOSIX(fds, sizeof(fds) / sizeof(fds[0]), timeout))
         {
@@ -1456,12 +1464,6 @@ static void handleEvents(double* timeout)
 
             if (read(_glfw.wl.cursorTimerfd, &repeats, sizeof(repeats)) == 8)
                 incrementCursorImage();
-        }
-
-        if (fds[LIBDECOR_FD].revents & POLLIN)
-        {
-            if (libdecor_dispatch(_glfw.wl.libdecor.context, 0) > 0)
-                event = GLFW_TRUE;
         }
     }
 }
