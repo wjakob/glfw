@@ -206,6 +206,7 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 @interface GLFWWindowDelegate : NSObject
 {
     _GLFWwindow* window;
+    NSTimer* liveResizeTimer;
 }
 
 - (instancetype)initWithGlfwWindow:(_GLFWwindow *)initWindow;
@@ -221,6 +222,13 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
         window = initWindow;
 
     return self;
+}
+
+- (void)dealloc
+{
+    [liveResizeTimer invalidate];
+    [liveResizeTimer release];
+    [super dealloc];
 }
 
 - (BOOL)windowShouldClose:(id)sender
@@ -262,6 +270,43 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
         window->ns.height = contentRect.size.height;
         _glfwInputWindowSize(window, contentRect.size.width, contentRect.size.height);
     }
+}
+
+- (void)windowWillStartLiveResize:(NSNotification *)notification
+{
+    (void) notification;
+
+    if (liveResizeTimer)
+        return;
+
+    liveResizeTimer = [[NSTimer timerWithTimeInterval:1.0 / 60.0
+                                               target:self
+                                             selector:@selector(liveResizeTimerFired:)
+                                             userInfo:nil
+                                              repeats:YES] retain];
+
+    [[NSRunLoop mainRunLoop] addTimer:liveResizeTimer
+                              forMode:NSEventTrackingRunLoopMode];
+
+    _glfwInputWindowDamage(window);
+}
+
+- (void)windowDidEndLiveResize:(NSNotification *)notification
+{
+    (void) notification;
+
+    [liveResizeTimer invalidate];
+    [liveResizeTimer release];
+    liveResizeTimer = nil;
+
+    _glfwInputWindowDamage(window);
+}
+
+- (void)liveResizeTimerFired:(NSTimer *)timer
+{
+    (void) timer;
+
+    _glfwInputWindowDamage(window);
 }
 
 - (void)windowDidMove:(NSNotification *)notification
@@ -388,6 +433,9 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 {
     if (window->context.source == GLFW_NATIVE_CONTEXT_API)
         [window->context.nsgl.object update];
+
+    if ([self inLiveResize])
+        return;
 
     _glfwInputWindowDamage(window);
 }
@@ -533,6 +581,11 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (void)drawRect:(NSRect)rect
 {
+    (void) rect;
+
+    if ([self inLiveResize])
+        return;
+
     _glfwInputWindowDamage(window);
 }
 
@@ -2124,4 +2177,3 @@ GLFWAPI id glfwGetCocoaView(GLFWwindow* handle)
 }
 
 #endif // _GLFW_COCOA
-
