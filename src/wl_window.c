@@ -65,6 +65,7 @@
 #define GLFW_PENDING_MOTION     4
 #define GLFW_PENDING_SCROLL     8
 #define GLFW_PENDING_DISCRETE   16
+#define GLFW_PENDING_AXIS_STOP  32
 
 static int createTmpfileCloexec(char* tmpname)
 {
@@ -1858,6 +1859,7 @@ static void processPointerEnterSurface(struct wl_surface* surface)
 static void processPointerLeaveSurface(struct wl_surface* surface)
 {
     _glfw.wl.pointerSurface = NULL;
+    _glfw.wl.scrolling = GLFW_FALSE;
 
     _GLFWwindow* window = wl_surface_get_user_data(surface);
     if (window->wl.surface == surface)
@@ -1900,11 +1902,11 @@ static void processPointerButton(int button, int action)
     }
 }
 
-static void processPointerScroll(double xoffset, double yoffset)
+static void processPointerScroll(double xoffset, double yoffset, int flags)
 {
     _GLFWwindow* window = wl_surface_get_user_data(_glfw.wl.pointerSurface);
     if (window->wl.surface == _glfw.wl.pointerSurface)
-        _glfwInputScroll(window, xoffset, yoffset);
+        _glfwInputScroll(window, xoffset, yoffset, flags);
 }
 
 static void pointerHandleEnter(void* userData,
@@ -2038,9 +2040,9 @@ static void pointerHandleAxis(void* userData,
     {
         // NOTE: 15 units of motion per mouse wheel step seems to be a common ratio to wheel detents
         if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
-            processPointerScroll(-wl_fixed_to_double(value) / 15.0, 0.0);
+            processPointerScroll(-wl_fixed_to_double(value) / 15.0, 0.0, 0);
         else if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
-            processPointerScroll(0.0, -wl_fixed_to_double(value) / 15.0);
+            processPointerScroll(0.0, -wl_fixed_to_double(value) / 15.0, 0);
     }
 }
 
@@ -2064,10 +2066,38 @@ static void pointerHandleFrame(void* userData, struct wl_pointer* pointer)
     if (_glfw.wl.pending.events & GLFW_PENDING_BUTTON)
         processPointerButton(_glfw.wl.pending.button, _glfw.wl.pending.action);
 
-    if (_glfw.wl.pending.events & GLFW_PENDING_DISCRETE)
-        processPointerScroll(_glfw.wl.pending.discreteX, _glfw.wl.pending.discreteY);
-    else if (_glfw.wl.pending.events & GLFW_PENDING_SCROLL)
-        processPointerScroll(_glfw.wl.pending.scrollX, _glfw.wl.pending.scrollY);
+    const unsigned int scrolled =
+        _glfw.wl.pending.events & (GLFW_PENDING_DISCRETE | GLFW_PENDING_SCROLL);
+    const unsigned int stopped = _glfw.wl.pending.events & GLFW_PENDING_AXIS_STOP;
+
+    // Only continuous devices delimit their gestures with axis_stop
+    const GLFWbool precise =
+        _glfw.wl.axisSource == WL_POINTER_AXIS_SOURCE_FINGER ||
+        _glfw.wl.axisSource == WL_POINTER_AXIS_SOURCE_CONTINUOUS;
+
+    if (scrolled || (stopped && precise))
+    {
+        int flags = 0;
+
+        if (precise)
+        {
+            flags |= GLFW_SCROLL_PRECISE;
+            if (!_glfw.wl.scrolling)
+                flags |= GLFW_SCROLL_BEGIN;
+            if (stopped)
+                flags |= GLFW_SCROLL_END;
+            _glfw.wl.scrolling = !stopped;
+        }
+
+        if (_glfw.wl.pending.events & GLFW_PENDING_DISCRETE)
+            processPointerScroll(_glfw.wl.pending.discreteX,
+                                 _glfw.wl.pending.discreteY, flags);
+        else if (_glfw.wl.pending.events & GLFW_PENDING_SCROLL)
+            processPointerScroll(_glfw.wl.pending.scrollX,
+                                 _glfw.wl.pending.scrollY, flags);
+        else
+            processPointerScroll(0.0, 0.0, flags);
+    }
 
     memset(&_glfw.wl.pending, 0, sizeof(_glfw.wl.pending));
 }
@@ -2076,6 +2106,7 @@ static void pointerHandleAxisSource(void* userData,
                                     struct wl_pointer* pointer,
                                     uint32_t axisSource)
 {
+    _glfw.wl.axisSource = axisSource;
 }
 
 static void pointerHandleAxisStop(void* userData,
@@ -2083,6 +2114,10 @@ static void pointerHandleAxisStop(void* userData,
                                   uint32_t time,
                                   uint32_t axis)
 {
+    if (!_glfw.wl.pointerSurface)
+        return;
+
+    _glfw.wl.pending.events |= GLFW_PENDING_AXIS_STOP;
 }
 
 static void pointerHandleAxisDiscrete(void* userData,

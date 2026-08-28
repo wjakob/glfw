@@ -301,6 +301,12 @@ extern "C" {
 #define GLFW_VERSION_REVISION       0
 /*! @} */
 
+/*! @brief Set if @ref GLFWscrollfun takes the extra `flags` argument.
+ *
+ *  @ingroup init
+ */
+#define GLFW_HAS_SCROLL_FLAGS       1
+
 /*! @brief One.
  *
  *  This is only semantic sugar for the number 1.  You can instead use `1` or
@@ -560,6 +566,31 @@ extern "C" {
  *  GLFW_LOCK_KEY_MODS input mode is set.
  */
 #define GLFW_MOD_NUM_LOCK        0x0020
+
+/*! @} */
+
+/*! @defgroup scrollflags Scroll flags
+ *  @brief Device and phase flags for scroll events.
+ *
+ *  See [scroll input](@ref scrolling) for how these are used.
+ *
+ *  @ingroup input
+ *  @{ */
+
+/*! @brief If this bit is set the offsets come from a pixel-precise device such
+ *  as a touchpad, rather than from a wheel with discrete detents.
+ */
+#define GLFW_SCROLL_PRECISE      0x0001
+/*! @brief If this bit is set the event belongs to the inertial phase that
+ *  follows the user lifting their fingers.
+ */
+#define GLFW_SCROLL_MOMENTUM     0x0002
+/*! @brief If this bit is set the event is the first one of a scroll phase.
+ */
+#define GLFW_SCROLL_BEGIN        0x0004
+/*! @brief If this bit is set the event is the last one of a scroll phase.
+ */
+#define GLFW_SCROLL_END          0x0008
 
 /*! @} */
 
@@ -1869,12 +1900,18 @@ typedef void (* GLFWcursorenterfun)(GLFWwindow* window, int entered);
  *  This is the function pointer type for scroll callbacks.  A scroll callback
  *  function has the following signature:
  *  @code
- *  void function_name(GLFWwindow* window, double xoffset, double yoffset)
+ *  void function_name(GLFWwindow* window, double xoffset, double yoffset, int flags)
  *  @endcode
  *
  *  @param[in] window The window that received the event.
  *  @param[in] xoffset The scroll offset along the x-axis.
  *  @param[in] yoffset The scroll offset along the y-axis.
+ *  @param[in] flags Bit field describing the device and phase of the event, see
+ *  [scroll flags](@ref scrollflags).  Backends that cannot tell a wheel from a
+ *  touchpad report zero.
+ *
+ *  @remark Events carrying @ref GLFW_SCROLL_BEGIN or @ref GLFW_SCROLL_END may
+ *  have zero offsets on both axes.
  *
  *  @sa @ref scrolling
  *  @sa @ref glfwSetScrollCallback
@@ -1883,7 +1920,7 @@ typedef void (* GLFWcursorenterfun)(GLFWwindow* window, int entered);
  *
  *  @ingroup input
  */
-typedef void (* GLFWscrollfun)(GLFWwindow* window, double xoffset, double yoffset);
+typedef void (* GLFWscrollfun)(GLFWwindow* window, double xoffset, double yoffset, int flags);
 
 /*! @brief The function pointer type for keyboard key callbacks.
  *
@@ -5444,7 +5481,7 @@ GLFWAPI GLFWcursorenterfun glfwSetCursorEnterCallback(GLFWwindow* window, GLFWcu
  *
  *  @callback_signature
  *  @code
- *  void function_name(GLFWwindow* window, double xoffset, double yoffset)
+ *  void function_name(GLFWwindow* window, double xoffset, double yoffset, int flags)
  *  @endcode
  *  For more information about the callback parameters, see the
  *  [function pointer type](@ref GLFWscrollfun).

@@ -390,11 +390,11 @@ static void cursor_enter_callback(GLFWwindow* window, int entered)
            entered ? "entered" : "left");
 }
 
-static void scroll_callback(GLFWwindow* window, double x, double y)
+static void scroll_callback(GLFWwindow* window, double x, double y, int flags)
 {
     Slot* slot = glfwGetWindowUserPointer(window);
-    printf("%08x to %i at %0.3f: Scroll: %0.3f %0.3f\n",
-           counter++, slot->number, glfwGetTime(), x, y);
+    printf("%08x to %i at %0.3f: Scroll: %0.3f %0.3f (flags 0x%02x)\n",
+           counter++, slot->number, glfwGetTime(), x, y, flags);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)

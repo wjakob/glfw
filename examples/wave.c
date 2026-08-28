@@ -352,7 +352,7 @@ void cursor_position_callback(GLFWwindow* window, double x, double y)
 // Callback function for scroll events
 //========================================================================
 
-void scroll_callback(GLFWwindow* window, double x, double y)
+void scroll_callback(GLFWwindow* window, double x, double y, int flags)
 {
     zoom += (float) y / 4.f;
     if (zoom < 0)

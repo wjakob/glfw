@@ -684,15 +684,29 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 {
     double deltaX = [event scrollingDeltaX];
     double deltaY = [event scrollingDeltaY];
+    int flags = 0;
 
     if ([event hasPreciseScrollingDeltas])
     {
         deltaX *= 0.1;
         deltaY *= 0.1;
+        flags |= GLFW_SCROLL_PRECISE;
     }
 
-    if (fabs(deltaX) > 0.0 || fabs(deltaY) > 0.0)
-        _glfwInputScroll(window, deltaX, deltaY);
+    // A flick reports two phases, the gesture itself and the momentum tail
+    const NSEventPhase phase = [event phase];
+    const NSEventPhase momentum = [event momentumPhase];
+
+    if (momentum != NSEventPhaseNone)
+        flags |= GLFW_SCROLL_MOMENTUM;
+    if ((phase | momentum) & NSEventPhaseBegan)
+        flags |= GLFW_SCROLL_BEGIN;
+    if ((phase | momentum) & (NSEventPhaseEnded | NSEventPhaseCancelled))
+        flags |= GLFW_SCROLL_END;
+
+    if (fabs(deltaX) > 0.0 || fabs(deltaY) > 0.0 ||
+        (flags & (GLFW_SCROLL_BEGIN | GLFW_SCROLL_END)))
+        _glfwInputScroll(window, deltaX, deltaY, flags);
 }
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender

@@ -528,6 +528,9 @@ typedef struct _GLFWlibraryWayland
         int                     action;
     } pending;
 
+    uint32_t                    axisSource;
+    GLFWbool                    scrolling;
+
     struct {
         void*                   handle;
         struct xkb_context*     context;
